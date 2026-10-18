@@ -1,0 +1,3 @@
+# Never commit LINE credentials to the public CooTai repo.
+agent/credentials.json
+*.json
