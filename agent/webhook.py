@@ -1,17 +1,74 @@
 #!/usr/bin/env python3
-"""CooTai LINE auto-reply agent webhook."""
+"""CooTai LINE auto-reply agent webhook (text + Chinese voice messages)."""
 import base64
 import hashlib
 import hmac
 import json
 import os
+import subprocess
+import tempfile
 import urllib.request
+import wave
+
+import numpy as np
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CREDS = json.load(open(os.path.join(BASE_DIR, "credentials.json"), encoding="utf-8"))
 CHANNEL_SECRET = CREDS["channel_secret"]
 ACCESS_TOKEN = CREDS["channel_access_token"]
 API = "https://api.line.me/v2/bot/message/reply"
+CONTENT_API = "https://api-data.line.me/v2/bot/message/{}/content"
+FFMPEG = os.environ.get("FFMPEG_BIN",
+    "/home/educator/.hermes/tools/ffmpeg-9.0.1-linux-x64/bin/ffmpeg")
+MODEL_DIR = os.path.join(BASE_DIR, "models")
+
+_whisper = None
+
+
+def get_whisper():
+    """Lazy-load the Chinese-capable Whisper model once."""
+    global _whisper
+    if _whisper is None:
+        from faster_whisper import WhisperModel
+        _whisper = WhisperModel("small", device="cpu", compute_type="int8",
+                                download_root=MODEL_DIR)
+    return _whisper
+
+
+def download_content(message_id):
+    """Download an audio message's bytes from LINE's content API."""
+    req = urllib.request.Request(
+        CONTENT_API.format(message_id),
+        headers={"Authorization": "Bearer " + ACCESS_TOKEN},
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return resp.read()
+
+
+def transcribe_audio(raw_bytes):
+    """Transcribe Chinese (or mixed) audio bytes -> text.
+    Converts to 16k mono WAV via ffmpeg, decodes with stdlib wave,
+    passes a float32 numpy array to Whisper (per audio-transcription skill).
+    """
+    with tempfile.TemporaryDirectory() as td:
+        src = os.path.join(td, "in.m4a")
+        wav = os.path.join(td, "out.wav")
+        with open(src, "wb") as f:
+            f.write(raw_bytes)
+        subprocess.run(
+            [FFMPEG, "-y", "-v", "error", "-i", src,
+             "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", wav],
+            check=True, timeout=60,
+        )
+        with wave.open(wav, "rb") as w:
+            sr = w.getframerate()
+            raw = w.readframes(w.getnframes())
+    audio = np.frombuffer(raw, dtype=np.int16).astype(np.float32) / 32768.0
+    model = get_whisper()
+    segments, info = model.transcribe(audio, language="zh", beam_size=5,
+                                      vad_filter=True)
+    return "".join(s.text for s in segments).strip()
+
 
 
 def verify_signature(channel_secret, body, signature):
@@ -99,13 +156,40 @@ def handle(event):
     if event.get("type") != "message":
         return
     msg = event.get("message", {})
-    if msg.get("type") != "text":
-        reply = "目前我只能回覆文字訊息，請以文字輸入您的問題，謝謝！"
-    else:
+    mtype = msg.get("type")
+    token = event.get("replyToken")
+
+    if mtype == "text":
         text = msg.get("text", "")
+    elif mtype == "audio":
+        # Voice message: download -> transcribe (Chinese) -> treat as text
+        try:
+            raw = download_content(msg.get("id"))
+            text = transcribe_audio(raw)
+        except Exception as e:
+            print("voice transcribe error:", e, flush=True)
+            if token:
+                send_reply(token, "不好意思，語音訊息處理失敗，請再試一次或用文字輸入，謝謝！")
+            return
+        if not text:
+            if token:
+                send_reply(token, "不好意思，我沒聽清楚，可以再說一次嗎？")
+            return
+        # Fall through: reply based on transcribed intent
         intent = match_intent(text)
         reply = INTENTS.get(intent, CATCH_ALL) if intent else CATCH_ALL
-    token = event.get("replyToken")
+        # Prefix so the user knows we heard them
+        reply = f"（我聽到的是：「{text}」）\n\n" + reply
+        if token:
+            send_reply(token, reply)
+        return
+    else:
+        if token:
+            send_reply(token, "目前我可以處理文字與語音訊息，請用文字或語音輸入，謝謝！")
+        return
+
+    intent = match_intent(text)
+    reply = INTENTS.get(intent, CATCH_ALL) if intent else CATCH_ALL
     if token:
         send_reply(token, reply)
 
