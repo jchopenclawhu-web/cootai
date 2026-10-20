@@ -24,6 +24,19 @@ Last updated: 2026-10-18
 | complaint words | Empathetic response |
 | anything else | Friendly catch-all |
 
+## Voice messages (Chinese) — added 2026-10-20
+- LINE voice messages (`message.type == "audio"`) are downloaded via the content API,
+  converted to 16k mono WAV (ffmpeg), and transcribed with **faster-whisper `small` int8**
+  (Chinese `zh`, beam 5, VAD on). Model cached in `agent/models/` (gitignored).
+- The reply echoes what was heard, then answers by intent.
+- Verified: Chinese sample transcribed correctly, language prob 1.0.
+
+## Service management (24/7)
+systemd **user** units (no sudo; `loginctl` Linger=yes so they start at boot without login):
+- `cootai-agent.service` — runs `webhook.py` on :8080, Restart=always
+- `cootai-tunnel.service` — runs the named cloudflared tunnel, Restart=always
+Commands: `systemctl --user status|restart cootai-agent cootai-tunnel`
+
 ## Known next steps (TODO)
 1. **Make webhook permanent**: current URL is a `trycloudflare.com` quick tunnel (changes on restart).
    → Set up a **named Cloudflare tunnel** with stable custom domain (e.g. `bot.cootai.tw`).
