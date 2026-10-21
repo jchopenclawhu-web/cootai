@@ -48,6 +48,27 @@ Last updated: 2026-10-18
   Not persisted across restarts — fine for now, SQLite if it needs to survive.
 - Replies truncated to 1500 chars (LINE's hard limit is 5000).
 
+## LINE app surface (2026-10-21)
+- **Profile photo**: `brand/line_profile.png` (plus mark + COOTAI, square 640px).
+  Line profile photos cannot be set via API — uploaded manually in Manager → 帳號資訊.
+- **Rich menu**: `CooTai Main Menu`, id `richmenu-50de382eee6534d198073f365aabba53`,
+  2500x843, 3 buttons, set as **default for all users**.
+  Buttons send text that hits the rule engine:
+  - 服務內容 → 「服務包含什麼?」 → services
+  - 價格方案 → 「你們的價格怎麼算」 → price
+  - 預約諮詢 → 「我想預約諮詢」 → booking
+  Regenerate with `brand/gen_line_assets.py`; recreate + re-upload via the
+  rich menu API, then `POST /v2/bot/user/all/richmenu/{id}`.
+
+## Owner notifications (2026-10-21)
+- `notify_owner()` pushes to Telegram (`COOTAI_NOTIFY_CHAT`, default 8345157605).
+- Fires ONLY on genuine inquiries: `src == "llm"` (unscripted question) and
+  `rule:booking`. Deliberately silent on greetings/pricing to avoid noise.
+- Every message is appended to `agent/inquiries.jsonl` (gitignored) for review.
+- **Growth loop**: new request → AI defers → owner alerted → owner decides →
+  if we offer it, add to `COMPANY_FACTS` and the AI starts selling it.
+  That log becomes the product roadmap, driven by real demand.
+
 ## Adding company knowledge
 Edit `COMPANY_FACTS` in `webhook.py` — that is the single source of truth the LLM
 is allowed to speak from. Add services/prices/FAQ there before promising anything
