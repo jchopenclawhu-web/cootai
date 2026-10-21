@@ -92,6 +92,19 @@
     color: var(--navy) !important; font-weight: 600;
   }
   @media (max-width: 760px) { .name-grid { grid-template-columns: 1fr; } }
+  .name-strip {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 26px;
+    background: var(--soft); border-radius: 16px; padding: 26px;
+  }
+  .ns-item { text-align: center; }
+  .ns-key {
+    display: inline-block; font-weight: 800; font-size: 15px; letter-spacing: .5px;
+    color: var(--navy); background: #fff; border: 1.5px solid var(--line);
+    padding: 4px 12px; border-radius: 7px; margin-bottom: 10px;
+  }
+  .ns-item p { color: var(--navy); font-weight: 700; font-size: 15px; line-height: 1.5; }
+  .ns-item small { color: var(--muted); font-weight: 400; font-size: 12px; }
+  @media (max-width: 760px) { .name-strip { grid-template-columns: repeat(2, 1fr); } }
 
   /* Hero */
   .hero { padding: 84px 0 70px; background: radial-gradient(1200px 500px at 80% -10%, #eaf0ff, #fff 60%); }
@@ -330,7 +343,7 @@
 <section id="name">
   <div class="container">
     <div class="sec-head center">
-      <h2>名字裡的兩個意思</h2>
+      <h2>名字裡的三個意思</h2>
       <p>CooTai 酷台，是一個關於「誰來幫你經營」的名字。</p>
     </div>
     <div class="name-grid">
@@ -345,9 +358,16 @@
         <div class="name-label alt">AI</div>
         <h3>人工智慧</h3>
         <p><strong>名稱裡的 AI，就是 Artificial Intelligence——人工智慧。</strong></p>
-        <p>而「酷台」的台，是台灣。COO + AI 合在一起，就是：<br>用人工智慧，為台灣的中小企業做好營運。</p>
+        <p>而「台」，是平台，也是台灣。<br>COO + AI 合在一起，就是：<br>一個用人工智慧運作的營運平台，而且是在地台灣團隊。</p>
         <p class="name-note">所以我們叫 CooTai 酷台——你的 AI 營運長。</p>
       </div>
+    </div>
+
+    <div class="name-strip">
+      <div class="ns-item"><span class="ns-key">COO</span><p>營運長<br><small>Chief Operating Officer</small></p></div>
+      <div class="ns-item"><span class="ns-key">AI</span><p>人工智慧<br><small>Artificial Intelligence</small></p></div>
+      <div class="ns-item"><span class="ns-key">台</span><p>平台．台灣<br><small>Platform in Taiwan</small></p></div>
+      <div class="ns-item"><span class="ns-key">酷</span><p>酷<br><small>Cool — 好用、不複雜</small></p></div>
     </div>
   </div>
 </section>

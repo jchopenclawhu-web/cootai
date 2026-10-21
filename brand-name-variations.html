@@ -27,6 +27,7 @@
   .lab{display:inline-block;font-weight:800;font-size:15px;color:#fff;background:var(--navy);
        padding:3px 10px;border-radius:6px;margin-right:6px}
   .lab.ai{background:var(--violet)}
+  .lab.tw{background:var(--orange)}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:8px}
   @media(max-width:700px){.grid2{grid-template-columns:1fr}}
   .wm{display:inline-flex;align-items:baseline;font-weight:800;font-size:34px;letter-spacing:-.5px}
@@ -34,17 +35,22 @@
   .wm .a{color:var(--violet)}
   .tiny{font-size:13px;color:var(--muted);margin-top:10px}
   .note{background:var(--soft);border-radius:12px;padding:20px;margin-top:34px;font-size:14px;color:var(--muted)}
+  .strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px;
+         background:var(--soft);border-radius:12px;padding:18px}
+  .strip div{text-align:center;font-weight:700;font-size:14px}
+  .strip small{display:block;font-weight:400;color:var(--muted);font-size:11.5px}
+  @media(max-width:700px){.strip{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>CooTai 品牌名稱說明 — 版本比較</h1>
-  <p class="sub">四種說法，同樣的核心：<strong>COO＝營運長</strong>，<strong>AI＝人工智慧</strong>。挑一個最順口的，我再放進網站。</p>
+  <p class="sub">四種說法。核心：<strong>COO＝營運長</strong>、<strong>AI＝人工智慧</strong>、<strong>台＝平台／台灣</strong>。挑一個最順口的，我再放進網站。</p>
 
   <!-- V1 -->
   <div class="variant rec">
     <span class="vtag">版本 1 · 推薦（已上線）</span>
-    <div class="vtitle">名字裡的兩個意思</div>
+    <div class="vtitle">名字裡的三個意思</div>
     <div class="grid2">
       <div>
         <p><span class="lab">COO</span><strong>營運長</strong></p>
@@ -54,8 +60,14 @@
       <div>
         <p><span class="lab ai">AI</span><strong>人工智慧</strong></p>
         <p><strong>名稱裡的 AI，就是 Artificial Intelligence。</strong></p>
-        <p>「酷台」的台，是台灣。合起來就是：用人工智慧，為台灣的中小企業做好營運。</p>
+        <p>而「台」，是平台，也是台灣。合起來就是：一個用 AI 運作的營運平台，而且是在地台灣團隊。</p>
       </div>
+    </div>
+    <div class="strip">
+      <div>COO<small>營運長</small></div>
+      <div>AI<small>人工智慧</small></div>
+      <div>台<small>平台．台灣</small></div>
+      <div>酷<small>好用、不複雜</small></div>
     </div>
     <p class="quote" style="margin-top:16px">CooTai 酷台——你的 AI 營運長。</p>
   </div>
@@ -63,12 +75,12 @@
   <!-- V2 -->
   <div class="variant">
     <span class="vtag">版本 2 · 直白拆解</span>
-    <div class="vtitle">COO ＋ AI ＝ 酷台</div>
-    <p>我們的名字，其實就是把兩件事放在一起：</p>
+    <div class="vtitle">COO ＋ AI ＋ 台 ＝ 酷台</div>
+    <p>我們的名字，其實就是把三個概念放在一起：</p>
     <p><span class="lab">COO</span> <strong>Chief Operating Officer，營運長。</strong>公司裡負責把日常營運做好的人——盯流程、管客戶、盯帳務。</p>
     <p><span class="lab ai">AI</span> <strong>Artificial Intelligence，人工智慧。</strong>我們用 AI 來做這位營運長的工作。</p>
-    <p>而「台」，是台灣。所以 <strong>CooTai 酷台 ＝ 用 AI 當你的營運長，而且是在地台灣團隊。</strong></p>
-    <p class="quote">不是買一套軟體，是請一位 AI 營運長。</p>
+    <p><span class="lab tw">台</span> <strong>平台，也是台灣。</strong>一個可以長期訂閱使用的營運平台，而且團隊就在台灣、說你的語言。</p>
+    <p class="quote">不是買一套軟體，是請一位 AI 營運長——而且它是一個平台。</p>
   </div>
 
   <!-- V3 -->
@@ -77,21 +89,21 @@
     <div class="vtitle">為什麼叫 CooTai？</div>
     <p>很多老闆都遇過這種狀況：明明請了人，事情還是堆在自己身上。因為真正吃時間的，是那些每天重複、又不能不做的事。</p>
     <p>大公司有 <strong>COO（營運長）</strong> 專門處理這些事；中小企業沒有這個編制，老闆自己就是營運長。</p>
-    <p>所以我們想做一件事：<strong>用 AI，替你把營運長的工作扛下來。</strong></p>
-    <p><strong>COO + AI</strong>，就是 CooTai。而「酷台」的台，是台灣——我們只服務台灣的中小企業。</p>
-    <p class="quote">CooTai 酷台：你的 AI 營運長，台灣在地。</p>
+    <p>所以我們做了一個<strong>平台</strong>：用 <strong>AI</strong> 把營運長的工作扛下來，讓你不必再自己撐。</p>
+    <p><strong>COO + AI + 台（平台）＝ CooTai</strong>。而這個平台，是在台灣做的。</p>
+    <p class="quote">CooTai 酷台：你的 AI 營運長平台。</p>
   </div>
 
   <!-- V4 -->
   <div class="variant">
     <span class="vtag">版本 4 · 極簡</span>
-    <div class="vtitle">COO 是你的營運長，AI 是我們的做法</div>
+    <div class="vtitle">COO 是你的營運長，AI 是做法，台是平台</div>
     <p style="font-size:17px;color:var(--navy)">
       <strong>COO</strong>｜Chief Operating Officer，營運長——管好每天的營運。<br>
       <strong>AI</strong>｜Artificial Intelligence，人工智慧——我們執行的方法。<br>
-      <strong>Tai</strong>｜台灣——我們服務的地方。
+      <strong>台</strong>｜平台 Platform，也是台灣 Taiwan——你訂閱、我們維護的地方。
     </p>
-    <p class="quote">CooTai 酷台 ＝ 你的 AI 營運長。</p>
+    <p class="quote">CooTai 酷台 ＝ 你的 AI 營運長平台。</p>
   </div>
 
   <!-- wordmark preview -->
@@ -102,7 +114,8 @@
   </div>
 
   <div class="note">
-    <strong>給您的建議：</strong>版本 1 最平衡（兩個概念並列、適合放在網站），版本 3 最有說服力（先講痛點再解釋名字，適合放在「關於我們」或業務簡報開頭）。兩個可以同時用：網站放版本 1，跟客戶口頭介紹時用版本 3 的故事。
+    <strong>給您的建議：</strong>版本 1 最平衡（適合放網站），版本 3 最有說服力（先講痛點再解釋名字，適合口頭介紹、業務簡報）。兩個可以並用：網站放版本 1，跟客戶聊的時候講版本 3 的故事。<br><br>
+    <strong>關於「台」：</strong>它同時是「平台」和「台灣」，這對訂閱制服務是很有利的聯想——平台代表可以長期使用、我們持續維護；台灣代表在地、說你的語言。客戶問起時，兩個意思都可以講。
   </div>
 </div>
 </body>
