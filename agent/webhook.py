@@ -236,8 +236,21 @@ def app(environ, start_response):
 
 if __name__ == "__main__":
     from wsgiref.simple_server import make_server
+    import threading
 
     port = int(os.environ.get("PORT", 8080))
+    log(f"CooTai LINE agent listening on :{port}")
+    log("warming Whisper model in background (first voice msg will be faster)...")
+
+    def _warm():
+        t0 = time.time()
+        try:
+            get_whisper()
+            log(f"Whisper model ready in {time.time()-t0:.1f}s")
+        except Exception as e:
+            log(f"Whisper warmup failed: {e!r}")
+
+    threading.Thread(target=_warm, daemon=True, name="whisper-warmup").start()
+
     server = make_server("0.0.0.0", port, app)
-    print(f"CooTai LINE agent listening on :{port}", flush=True)
     server.serve_forever()
