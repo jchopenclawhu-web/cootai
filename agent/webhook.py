@@ -23,6 +23,111 @@ FFMPEG = os.environ.get("FFMPEG_BIN",
     "/home/educator/.hermes/tools/ffmpeg-9.0.1-linux-x64/bin/ffmpeg")
 MODEL_DIR = os.path.join(BASE_DIR, "models")
 
+# ---- LLM fallback (OpenRouter / DeepSeek) ----
+LLM_URL = "https://openrouter.ai/api/v1/chat/completions"
+LLM_MODEL = os.environ.get("LLM_MODEL", "deepseek/deepseek-v4.1-flash-1017")
+
+# Only facts we actually know. The model must never invent beyond this.
+COMPANY_FACTS = """\
+公司名稱：CooTai 酷台
+地點：新北市林口區
+服務時間：週一至週五 09:00–18:00（非營業時間留言，上班後回覆）
+服務內容：
+- LINE 官方帳號 AI 自動回覆（文字與語音）
+- 網站建置與維護
+- 預約／報名自動化管理
+- 客戶詢問自動分類與回覆
+- 資料整理與報表自動化
+收費（月費訂閱制）：
+- 入門方案 NT$15,000/月起
+- 標準方案 NT$25,000/月
+- 進階方案 NT$40,000/月起
+合作方式：先了解客戶行業與需求，再建議最適合的方案。
+"""
+
+SYSTEM_PROMPT = (
+    "你是「CooTai 酷台」的 AI 客服助理，透過 LINE 與客戶對話。\n"
+    "你代表公司對外說話，客戶不知道你有「資料」這回事。\n\n"
+    "【最重要規則】\n"
+    "1. 只能根據下方【公司資料】回答。\n"
+    "2. 若資料中沒有答案（例如政府補助、折扣、特定合約條件、客戶案例、\n"
+    "   尚未提供的功能），絕對不可以猜測、承諾或編造。\n"
+    "3. 遇到這種情況，請用自然的說法帶過，例如：\n"
+    "   「這部分我需要請專人為您確認」或「詳細內容我請同事跟您說明」，\n"
+    "   然後邀請對方留下聯絡方式或預約。\n"
+    "4. 【絕對不要】說出「公司資料」「資料中沒有」「根據我的資料」等字眼，\n"
+    "   也不要提到你是 AI 或語言模型。\n\n"
+    "【語氣】\n"
+    "- 一律使用繁體中文（台灣用語）。\n"
+    "- 親切、專業、簡短。每次回覆最多 3 句話或 80 字。\n"
+    "- 不要使用 Markdown 語法（LINE 不支援）。\n"
+    "- 結尾可自然地引導下一步（詢問需求、邀請預約或留聯絡方式）。\n\n"
+    "【公司資料】\n" + COMPANY_FACTS
+)
+
+_llm_key = None
+
+
+def get_llm_key():
+    """Read the OpenRouter key once from env or ~/.hermes/.env."""
+    global _llm_key
+    if _llm_key is not None:
+        return _llm_key
+    _llm_key = os.environ.get("OPENROUTER_API_KEY", "")
+    if not _llm_key:
+        for p in (os.path.expanduser("~/.hermes/.env"), os.path.expanduser("~/.env")):
+            try:
+                with open(p, encoding="utf-8") as f:
+                    for line in f:
+                        if line.startswith("OPENROUTER_API_KEY="):
+                            _llm_key = line.split("=", 1)[1].strip().strip('"').strip("'")
+                            break
+            except OSError:
+                continue
+            if _llm_key:
+                break
+    return _llm_key
+
+
+def llm_reply(text, history=None):
+    """Ask the LLM for a grounded answer. Returns None on any failure."""
+    key = get_llm_key()
+    if not key:
+        log("LLM: no OPENROUTER_API_KEY found")
+        return None
+    msgs = [{"role": "system", "content": SYSTEM_PROMPT}]
+    for h in (history or [])[-4:]:
+        msgs.append(h)
+    msgs.append({"role": "user", "content": text})
+    payload = json.dumps({
+        "model": LLM_MODEL,
+        "messages": msgs,
+        "max_tokens": 700,
+        "temperature": 0.3,
+    }).encode()
+    req = urllib.request.Request(
+        LLM_URL, data=payload,
+        headers={"Authorization": "Bearer " + key,
+                 "Content-Type": "application/json",
+                 "HTTP-Referer": "https://cootai.tw",
+                 "X-Title": "CooTai LINE Agent"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=45) as resp:
+            data = json.loads(resp.read())
+        msg = data["choices"][0]["message"]
+        content = (msg.get("content") or "").strip()
+        if not content:
+            log(f"LLM: empty content (finish={data['choices'][0].get('finish_reason')})")
+            return None
+        return content
+    except Exception as e:
+        log(f"LLM error: {e!r}")
+        return None
+
+
+
 _whisper = None
 
 
@@ -183,18 +288,65 @@ def match_intent(text):
     return None
 
 
+# ---- per-user short conversation memory (in-process, last few turns) ----
+_HISTORY = {}
+_HISTORY_MAX = 4  # keep 4 messages = 2 exchanges
+
+
+def _remember(user_id, role, content):
+    if not user_id:
+        return
+    h = _HISTORY.setdefault(user_id, [])
+    h.append({"role": role, "content": content})
+    del h[:-_HISTORY_MAX]
+
+
+def _history(user_id):
+    return list(_HISTORY.get(user_id, []))
+
+
+# LINE hard limit is 5000 chars; keep well under it.
+MAX_REPLY = 1500
+
+
+def compose_reply(text, user_id=None):
+    """Rule engine first (fast, free, exact); LLM fallback for anything else."""
+    intent = match_intent(text)
+    if intent:
+        _remember(user_id, "user", text)
+        reply = INTENTS[intent]
+        _remember(user_id, "assistant", reply)
+        return reply, f"rule:{intent}"
+
+    # No rule matched -> ask the LLM, grounded in Company Facts
+    llm = llm_reply(text, history=_history(user_id))
+    if llm:
+        _remember(user_id, "user", text)
+        _remember(user_id, "assistant", llm)
+        return llm, "llm"
+
+    # LLM unavailable -> safe fallback
+    return CATCH_ALL, "catch_all"
+
+
 def handle(event):
     if event.get("type") != "message":
         return
     msg = event.get("message", {})
     mtype = msg.get("type")
     token = event.get("replyToken")
+    user_id = (event.get("source") or {}).get("userId")
 
     if mtype == "text":
         text = msg.get("text", "")
         log(f"TEXT  <- {text!r}")
-    elif mtype == "audio":
-        # Voice message: download -> transcribe (Chinese) -> treat as text
+        reply, src = compose_reply(text, user_id)
+        log(f"TEXT  -> {src}")
+        if token:
+            send_reply(token, reply[:MAX_REPLY])
+        return
+
+    if mtype == "audio":
         log(f"AUDIO <- id={msg.get('id')} dur={msg.get('duration')}ms downloading...")
         try:
             raw = download_content(msg.get("id"))
@@ -210,26 +362,17 @@ def handle(event):
                 send_reply(token, "不好意思，我沒聽清楚，可以再說一次嗎？")
             return
         log(f"AUDIO -> transcribed {text!r}")
-        # Fall through: reply based on transcribed intent
-        intent = match_intent(text)
-        reply = INTENTS.get(intent, CATCH_ALL) if intent else CATCH_ALL
-        log(f"AUDIO -> intent={intent or 'catch_all'}")
-        # Prefix so the user knows we heard them
+        reply, src = compose_reply(text, user_id)
+        log(f"AUDIO -> {src}")
+        # Echo the transcript so the user knows we heard them correctly
         reply = f"（我聽到的是：「{text}」）\n\n" + reply
         if token:
-            send_reply(token, reply)
-        return
-    else:
-        log(f"OTHER <- unsupported message type={mtype!r}")
-        if token:
-            send_reply(token, "目前我可以處理文字與語音訊息，請用文字或語音輸入，謝謝！")
+            send_reply(token, reply[:MAX_REPLY])
         return
 
-    intent = match_intent(text)
-    reply = INTENTS.get(intent, CATCH_ALL) if intent else CATCH_ALL
-    log(f"TEXT  -> intent={intent or 'catch_all'}")
+    log(f"OTHER <- unsupported message type={mtype!r}")
     if token:
-        send_reply(token, reply)
+        send_reply(token, "目前我可以處理文字與語音訊息，請用文字或語音輸入，謝謝！")
 
 
 def app(environ, start_response):

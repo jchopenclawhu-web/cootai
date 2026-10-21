@@ -30,6 +30,28 @@ Last updated: 2026-10-18
   (Chinese `zh`, beam 5, VAD on). Model cached in `agent/models/` (gitignored).
 - The reply echoes what was heard, then answers by intent.
 - Verified: Chinese sample transcribed correctly, language prob 1.0.
+- Model preloads at startup (~1.5s) so the first voice message isn't slow.
+- Measured: ~4–5s per voice message warm, CPU only.
+
+## Reply pipeline (2026-10-21)
+1. **Rule engine first** — exact keyword match, instant (0.000s), 8 intents:
+   greet / price / location / hours / booking / emotion / services / about.
+   Keyword order matters: `emotion` is checked before `services` so 「服務很差」
+   stays an apology rather than an offering.
+2. **LLM fallback** — on no rule match, call DeepSeek via OpenRouter
+   (`deepseek/deepseek-v4.1-flash-1017`), ~0.7–1.8s.
+   Prompt is grounded in `COMPANY_FACTS` and forbids invention; on unknown topics
+   it routes to 「請專人為您確認」 without leaking words like 「公司資料」.
+3. **Safe fallback** — if the LLM errors (no key, 401, timeout), send CATCH_ALL.
+   Never crashes, never blocks a reply.
+- Per-user conversation memory: last 4 messages in-process (`_HISTORY`).
+  Not persisted across restarts — fine for now, SQLite if it needs to survive.
+- Replies truncated to 1500 chars (LINE's hard limit is 5000).
+
+## Adding company knowledge
+Edit `COMPANY_FACTS` in `webhook.py` — that is the single source of truth the LLM
+is allowed to speak from. Add services/prices/FAQ there before promising anything
+to a client.
 
 ## Service management (24/7)
 systemd **user** units (no sudo; `loginctl` Linger=yes so they start at boot without login):
