@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CooTai 酷台 — 為台灣中小企業打造的 AI 自動化助手</title>
 <meta name="description" content="CooTai 酷台：為診所、餐廳、補習班、貿易與會計事務所，建立專屬 AI 助手，自動處理重複的日常業務，把時間還給老闆。">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:image" content="https://cootai.tw/icon-512.png">
 <style>
   :root {
     --ink: #1a2332;
@@ -16,6 +20,9 @@
     --soft: #f5f7fa;
     --line: #e6eaf0;
     --radius: 14px;
+    --navy: #12263f;
+    --violet: #7c3aed;
+    --orange: #ff6b35;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { scroll-behavior: smooth; }
@@ -37,11 +44,22 @@
   .nav { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; }
   .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; }
   .brand .logo {
-    width: 36px; height: 36px; border-radius: 10px;
-    background: linear-gradient(135deg, var(--brand), var(--accent));
-    display: flex; align-items: center; justify-content: center; color: #fff; font-size: 18px;
+    width: 36px; height: 36px; border-radius: 10px; flex: 0 0 36px;
+    background: var(--navy);
+    display: flex; align-items: center; justify-content: center;
   }
+  .brand .logo svg { width: 20px; height: 20px; display: block; }
   .brand small { display: block; font-size: 12px; font-weight: 500; color: var(--muted); }
+  /* wordmark: COO + AI */
+  .wordmark {
+    display: inline-flex; align-items: baseline; gap: 0; line-height: 1;
+    font-weight: 800; font-size: 21px; letter-spacing: -0.3px; color: var(--navy);
+  }
+  .wordmark .plus {
+    display: inline-block; width: 15px; height: 15px; margin: 0 3px 0 2px;
+    position: relative; top: 1px; flex: 0 0 auto;
+  }
+  .wordmark .ai { color: var(--violet); }
   .nav-links { display: flex; gap: 26px; align-items: center; }
   .nav-links a { color: var(--ink); text-decoration: none; font-size: 15px; font-weight: 600; }
   .nav-links a:hover { color: var(--brand); }
@@ -53,6 +71,27 @@
   .btn:hover { background: var(--brand-dark); }
   .btn.ghost { background: transparent; color: var(--brand); border: 1.5px solid var(--brand); }
   .btn.ghost:hover { background: var(--soft); }
+
+  /* Brand-name section */
+  #name { padding: 80px 0; }
+  .name-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 40px; }
+  .name-card {
+    background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 34px;
+    box-shadow: 0 6px 24px rgba(18,38,63,.05);
+  }
+  .name-label {
+    display: inline-block; font-weight: 800; font-size: 24px; letter-spacing: 1px;
+    color: #fff; background: var(--navy); padding: 6px 16px; border-radius: 9px;
+  }
+  .name-label.alt { background: var(--violet); }
+  .name-card h3 { margin: 18px 0 12px; font-size: 24px; }
+  .name-card p { color: var(--muted); margin-bottom: 12px; }
+  .name-card strong { color: var(--navy); }
+  .name-note {
+    margin-top: 18px; padding-top: 16px; border-top: 1px dashed var(--line);
+    color: var(--navy) !important; font-weight: 600;
+  }
+  @media (max-width: 760px) { .name-grid { grid-template-columns: 1fr; } }
 
   /* Hero */
   .hero { padding: 84px 0 70px; background: radial-gradient(1200px 500px at 80% -10%, #eaf0ff, #fff 60%); }
@@ -181,11 +220,24 @@
 <header>
   <div class="container nav">
     <div class="brand">
-      <div class="logo">C</div>
-      <div>CooTai 酷台<small>台灣 AI 自動化服務</small></div>
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <rect x="42" y="14" width="16" height="72" rx="6" fill="#ff6b35"/>
+          <rect x="14" y="42" width="72" height="16" rx="6" fill="#ff6b35"/>
+        </svg>
+      </div>
+      <div>
+        <span class="wordmark">COO<span class="plus" aria-hidden="true">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <rect x="40" y="8" width="20" height="84" rx="7" fill="#ff6b35"/>
+            <rect x="8" y="40" width="84" height="20" rx="7" fill="#ff6b35"/>
+          </svg></span><span class="ai">AI</span></span>
+        <small>酷台 · 台灣 AI 自動化服務</small>
+      </div>
     </div>
     <nav class="nav-links">
       <a href="#services">服務</a>
+      <a href="#name">品牌</a>
       <a href="#case">案例</a>
       <a href="#pricing">方案</a>
       <a href="#process">流程</a>
@@ -269,6 +321,32 @@
         <h3>「真的把時間還給了我們」</h3>
         <p style="margin-top: 14px;">我們是從「自家生意」開始做起的。因為自己就是老闆，才最懂中小企業那種『什麼都要自己來』的辛苦。用 AI 把重複的事接手之後，我們終於能把時間花在真正重要的地方。</p>
         <p style="margin-top: 22px; color: var(--muted); font-size: 14px;">— CooTai 酷台 創辦團隊<br>(經營英語美語教室超過持續投入)</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Brand story -->
+<section id="name">
+  <div class="container">
+    <div class="sec-head center">
+      <h2>名字裡的兩個意思</h2>
+      <p>CooTai 酷台，是一個關於「誰來幫你經營」的名字。</p>
+    </div>
+    <div class="name-grid">
+      <div class="name-card">
+        <div class="name-label">COO</div>
+        <h3>營運長</h3>
+        <p><strong>COO = Chief Operating Officer，中文是「營運長」。</strong></p>
+        <p>一間公司裡，執行長負責方向，營運長負責把每天的營運管好——流程、客戶、預約、帳務。這正是我們想替你扮演的角色。</p>
+        <p class="name-note">我們不是再給你一套軟體，而是幫你請一位請得起的營運長。</p>
+      </div>
+      <div class="name-card">
+        <div class="name-label alt">AI</div>
+        <h3>人工智慧</h3>
+        <p><strong>名稱裡的 AI，就是 Artificial Intelligence——人工智慧。</strong></p>
+        <p>而「酷台」的台，是台灣。COO + AI 合在一起，就是：<br>用人工智慧，為台灣的中小企業做好營運。</p>
+        <p class="name-note">所以我們叫 CooTai 酷台——你的 AI 營運長。</p>
       </div>
     </div>
   </div>
