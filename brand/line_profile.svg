@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640">
+<rect width="640" height="640" fill="#12263F"/>
+<rect x="293" y="112" width="54" height="312" rx="13" fill="#FF6B35"/><rect x="164" y="241" width="312" height="54" rx="13" fill="#FF6B35"/>
+<text x="320" y="500" text-anchor="middle" font-family="'Noto Sans CJK TC','DejaVu Sans',Arial,sans-serif" font-weight="800"
+      font-size="86" fill="#FFFFFF" letter-spacing="6">COOTAI</text>
+<text x="320" y="552" text-anchor="middle" font-family="'Noto Sans CJK TC','DejaVu Sans',Arial,sans-serif" font-weight="500"
+      font-size="30" fill="#9FB3C8" letter-spacing="8">酷台</text>
+</svg>

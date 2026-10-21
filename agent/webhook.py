@@ -89,6 +89,50 @@ def get_llm_key():
     return _llm_key
 
 
+def notify_owner(text, user_id=None, kind="inquiry"):
+    """Push a Telegram alert to the owner when something needs attention."""
+    token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    chat = os.environ.get("COOTAI_NOTIFY_CHAT", "8345157605")
+    if not token:
+        for p in (os.path.expanduser("~/.hermes/.env"),):
+            try:
+                with open(p, encoding="utf-8") as f:
+                    for line in f:
+                        if line.startswith("TELEGRAM_BOT_TOKEN="):
+                            token = line.split("=", 1)[1].strip().strip('"').strip("'")
+                            break
+            except OSError:
+                pass
+    if not token:
+        log("notify: no TELEGRAM_BOT_TOKEN, skipping")
+        return
+    emoji = {"inquiry": "💬", "unanswered": "❓", "booking": "📅"}.get(kind, "💬")
+    body = f"{emoji} CooTai LINE 新訊息 ({kind})\n\n{text}"
+    if user_id:
+        body += f"\n\nuserId: {user_id}"
+    payload = json.dumps({"chat_id": chat, "text": body[:3500]}).encode()
+    req = urllib.request.Request(
+        f"https://api.telegram.org/bot{token}/sendMessage",
+        data=payload, headers={"Content-Type": "application/json"}, method="POST")
+    try:
+        urllib.request.urlopen(req, timeout=15).read()
+        log(f"notify: sent {kind} to owner")
+    except Exception as e:
+        log(f"notify error: {e!r}")
+
+
+def log_inquiry(user_id, text, src, reply):
+    """Append every conversation to a JSONL log for review / feature requests."""
+    path = os.path.join(BASE_DIR, "inquiries.jsonl")
+    rec = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "userId": user_id,
+           "text": text, "source": src, "reply": reply[:400]}
+    try:
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except OSError as e:
+        log(f"inquiry log error: {e!r}")
+
+
 def llm_reply(text, history=None):
     """Ask the LLM for a grounded answer. Returns None on any failure."""
     key = get_llm_key()
@@ -342,6 +386,12 @@ def handle(event):
         log(f"TEXT  <- {text!r}")
         reply, src = compose_reply(text, user_id)
         log(f"TEXT  -> {src}")
+        log_inquiry(user_id, text, src, reply)
+        if src == "llm":
+            # Unscripted question = genuine inquiry -> alert the owner
+            notify_owner(text, user_id, "inquiry")
+        elif src == "rule:booking":
+            notify_owner(text, user_id, "booking")
         if token:
             send_reply(token, reply[:MAX_REPLY])
         return
@@ -364,6 +414,11 @@ def handle(event):
         log(f"AUDIO -> transcribed {text!r}")
         reply, src = compose_reply(text, user_id)
         log(f"AUDIO -> {src}")
+        log_inquiry(user_id, text, f"voice:{src}", reply)
+        if src == "llm":
+            notify_owner(f"（語音）{text}", user_id, "inquiry")
+        elif src == "rule:booking":
+            notify_owner(f"（語音）{text}", user_id, "booking")
         # Echo the transcript so the user knows we heard them correctly
         reply = f"（我聽到的是：「{text}」）\n\n" + reply
         if token:

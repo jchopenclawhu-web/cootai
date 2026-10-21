@@ -1,3 +1,8 @@
 # Never commit LINE credentials to the public CooTai repo.
-agent/credentials.json
-*.jsonagent/models/
+credentials.json
+*.json
+agent/models/
+models/
+inquiries.jsonl
+.richmenu_id
+__pycache__/
