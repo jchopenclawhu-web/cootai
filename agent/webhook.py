@@ -7,6 +7,7 @@ import json
 import os
 import subprocess
 import tempfile
+import time
 import urllib.request
 import wave
 
@@ -23,6 +24,13 @@ FFMPEG = os.environ.get("FFMPEG_BIN",
 MODEL_DIR = os.path.join(BASE_DIR, "models")
 
 _whisper = None
+
+
+def log(msg):
+    """Timestamped, unbuffered log line (systemd captures stderr)."""
+    import sys
+    ts = time.strftime("%Y-%m-%d %H:%M:%S")
+    print(f"[{ts}] {msg}", file=sys.stderr, flush=True)
 
 
 def get_whisper():
@@ -162,35 +170,42 @@ def handle(event):
 
     if mtype == "text":
         text = msg.get("text", "")
+        log(f"TEXT  <- {text!r}")
     elif mtype == "audio":
         # Voice message: download -> transcribe (Chinese) -> treat as text
+        log(f"AUDIO <- id={msg.get('id')} dur={msg.get('duration')}ms downloading...")
         try:
             raw = download_content(msg.get("id"))
             text = transcribe_audio(raw)
         except Exception as e:
-            print("voice transcribe error:", e, flush=True)
+            log(f"voice transcribe error: {e!r}")
             if token:
                 send_reply(token, "不好意思，語音訊息處理失敗，請再試一次或用文字輸入，謝謝！")
             return
         if not text:
+            log("AUDIO -> empty transcript")
             if token:
                 send_reply(token, "不好意思，我沒聽清楚，可以再說一次嗎？")
             return
+        log(f"AUDIO -> transcribed {text!r}")
         # Fall through: reply based on transcribed intent
         intent = match_intent(text)
         reply = INTENTS.get(intent, CATCH_ALL) if intent else CATCH_ALL
+        log(f"AUDIO -> intent={intent or 'catch_all'}")
         # Prefix so the user knows we heard them
         reply = f"（我聽到的是：「{text}」）\n\n" + reply
         if token:
             send_reply(token, reply)
         return
     else:
+        log(f"OTHER <- unsupported message type={mtype!r}")
         if token:
             send_reply(token, "目前我可以處理文字與語音訊息，請用文字或語音輸入，謝謝！")
         return
 
     intent = match_intent(text)
     reply = INTENTS.get(intent, CATCH_ALL) if intent else CATCH_ALL
+    log(f"TEXT  -> intent={intent or 'catch_all'}")
     if token:
         send_reply(token, reply)
 
