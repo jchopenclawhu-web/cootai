@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="CooTai 酷台 — 為補習班設計的 AI 營運系統。試算每月可省下的時間與人力成本，免費、免安裝，即時重算。">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://cootai.tw/roi/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="CooTai 酷台">
+<meta property="og:title" content="補習班 AI 營運試算 — CooTai 酷台">
+<meta property="og:description" content="輸入學生數與老師數，即時算出每月可回收的時間與人力成本。">
+<meta property="og:url" content="https://cootai.tw/roi/">
+<meta property="og:image" content="https://cootai.tw/brand/og_card.png">
+<meta property="og:locale" content="zh_TW">
+<title>CooTai 酷台 — 補習班營運系統｜投資試算</title>
+<style>
+  :root{
+    --navy:#12263f; --navy2:#2f6bff; --ink:#1a2332; --muted:#5b6b7c;
+    --line:#e2e8ef; --bg:#f6f8fb; --card:#ffffff;
+    --gold:#b8860b; --good:#0f7a4d; --warn:#a15c00; --accent:#ffbb3d;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",-apple-system,"Helvetica Neue",sans-serif;
+    line-height:1.75;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:840px;margin:0 auto;padding:0 18px 72px}
+
+  header{background:linear-gradient(160deg,var(--navy),#1e4fd6);color:#fff;padding:44px 0 38px;margin-bottom:28px}
+  header .wrap{padding-bottom:0}
+  .logo{font-size:13px;letter-spacing:.22em;opacity:.75;margin-bottom:12px}
+  h1{font-size:27px;line-height:1.45;margin:0 0 14px;font-weight:700}
+  .sub{font-size:15.5px;opacity:.92;margin:0;max-width:62ch}
+  .tagline{margin-top:18px;font-size:16px;font-weight:700;color:var(--accent,#ffbb3d);
+    border-left:3px solid #ffbb3d;padding-left:12px}
+
+  h2{font-size:20px;margin:40px 0 6px;color:var(--navy);font-weight:700}
+  h2 .n{display:inline-block;width:26px;height:26px;line-height:26px;text-align:center;
+    background:var(--navy);color:#fff;border-radius:50%;font-size:14px;margin-right:10px;vertical-align:2px}
+  .lede{color:var(--muted);font-size:14.5px;margin:0 0 18px;max-width:64ch}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px 22px 20px;margin-bottom:16px}
+
+  /* ---- 試算器 ---- */
+  .calc{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:16px}
+  .calc-h{background:var(--navy);color:#fff;padding:16px 22px;font-weight:700;font-size:17px}
+  .calc-h small{display:block;font-weight:400;font-size:12.5px;opacity:.8;margin-top:4px}
+  .inputs{padding:20px 22px 6px;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px 22px}
+  .f label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:5px;font-weight:500}
+  .f input{width:100%;padding:9px 11px;border:1px solid #cfd8e3;border-radius:7px;font-size:15.5px;
+    font-family:inherit;color:var(--ink);background:#fff}
+  .f input:focus{outline:2px solid var(--navy2);outline-offset:1px;border-color:var(--navy2)}
+  .f .hint{font-size:11.5px;color:#8496a8;margin-top:4px;display:block}
+
+  .rows{padding:6px 22px 4px}
+  .row{display:flex;justify-content:space-between;align-items:baseline;gap:14px;
+    padding:11px 0;border-bottom:1px dashed var(--line)}
+  .row:last-child{border-bottom:none}
+  .row .k{font-size:14.5px}
+  .row .k em{font-style:normal;display:block;font-size:11.5px;color:#8496a8;margin-top:2px}
+  .row .v{font-size:16px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .v.muted{color:var(--muted);font-weight:500;font-size:14px}
+
+  .total{background:#f0f5fa;border-top:2px solid var(--navy);padding:18px 22px;display:flex;
+    justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+  .total .lbl{font-size:14px;font-weight:700;color:var(--navy)}
+  .total .lbl small{display:block;font-weight:400;color:var(--muted);font-size:11.5px;margin-top:2px}
+  .total .num{font-size:30px;font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;line-height:1.15}
+  .total .num small{font-size:14px;font-weight:600;color:var(--muted);display:block;text-align:right;margin-top:2px}
+
+  .verdict{margin:0 22px 20px;padding:14px 16px;border-radius:9px;font-size:14px;line-height:1.7}
+  .verdict.ok{background:#e8f6ef;border-left:4px solid var(--good);color:#0a5738}
+  .verdict.mid{background:#fdf3e2;border-left:4px solid var(--warn);color:#7a4600}
+  .verdict b{font-weight:700}
+
+  /* ---- 三個來源 ---- */
+  .src{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-bottom:6px}
+  .s{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:18px}
+  .s .badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;margin-bottom:9px}
+  .b-hard{background:#fdeaea;color:#a52020}
+  .b-soft{background:#eaf1fb;color:var(--navy2)}
+  .b-strat{background:#fdf3e2;color:var(--warn)}
+  .s h4{margin:0 0 8px;font-size:15.5px;color:var(--navy)}
+  .s p{margin:0;font-size:13.5px;color:var(--muted);line-height:1.72}
+  .s .amt{font-size:19px;font-weight:800;margin-top:11px;font-variant-numeric:tabular-nums}
+  .b-hard+.s .amt,.s .amt.h{color:#a52020}
+  .s .amt.s{color:var(--navy2)}
+
+  /* ---- 階段 ---- */
+  .ph{display:flex;gap:0;margin:20px 0 8px;border-radius:11px;overflow:hidden;border:1px solid var(--line);background:var(--card)}
+  .ph > div{flex:1;padding:18px 16px;border-right:1px solid var(--line)}
+  .ph > div:last-child{border-right:none}
+  .ph .pn{font-size:11px;font-weight:800;letter-spacing:.1em;color:var(--navy2);margin-bottom:7px}
+  .ph h5{margin:0 0 8px;font-size:14.5px;color:var(--navy)}
+  .ph ul{margin:0;padding-left:16px;font-size:12.5px;color:var(--muted);line-height:1.7}
+  .ph li{margin-bottom:3px}
+  .ph .when{font-size:11.5px;color:#8496a8;margin-top:9px;padding-top:9px;border-top:1px dashed var(--line)}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--card)}
+  th,td{padding:11px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#eef3f8;font-weight:700;color:var(--navy);font-size:12.5px}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .tblwrap{border:1px solid var(--line);border-radius:11px;overflow:hidden}
+  .tblwrap table tr:last-child td{border-bottom:none}
+  .total-row td{background:#f0f5fa;font-weight:700;color:var(--navy)}
+
+  details{margin-top:12px}
+  summary{cursor:pointer;font-size:13px;color:var(--navy2);font-weight:600;padding:10px 0}
+  .assume{background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px 18px 14px;font-size:12.5px;color:var(--muted)}
+  .assume li{margin:7px 0;line-height:1.7}
+
+  .note{background:#fff8e6;border-left:4px solid var(--gold);padding:14px 16px;border-radius:8px;
+    font-size:13.5px;color:#6b4d06;line-height:1.75;margin:16px 0}
+  footer{text-align:center;color:#8496a8;font-size:12px;margin-top:44px;line-height:1.9}
+  .cta{background:var(--navy);color:#fff;border-radius:11px;padding:22px;text-align:center;margin-top:22px}
+  .cta h4{margin:0 0 7px;font-size:18px;color:#fff}
+  .cta p{margin:0;font-size:14px;opacity:.9}
+  @media(max-width:640px){
+    h1{font-size:22px} .total .num{font-size:25px}
+    .ph{flex-direction:column} .ph > div{border-right:none;border-bottom:1px solid var(--line)}
+    .total{flex-direction:column;align-items:flex-start}
+    .total .num small{text-align:left}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="logo">COO + AI &nbsp;·&nbsp; 酷台</div>
+    <h1>把重複的日常交給 AI，<br>把時間還給老師</h1>
+    <p class="sub">專為補習班設計的營運系統。先把基礎建設架好，再依你的需求，一個功能一個功能長出來。</p>
+    <p class="tagline">不是賣你一套軟體，是幫你請一位請得起的 AI 營運長。</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <h2><span class="n">1</span>我們先幫你省下什麼</h2>
+  <p class="lede">補習班的成本不在房租，在<strong>重複的人力時間</strong>。下面三塊是我們實際在客戶端跑起來的。</p>
+
+  <div class="src">
+    <div class="s">
+      <span class="badge b-hard">硬成本 · 最關鍵</span>
+      <h4>人力替代</h4>
+      <p>家長問題有 6–7 成是重複的（請假、時間、費用、地址）。這些問題自動處理後，櫃檯可以從兩個人減到一個兼職。</p>
+      <div class="amt h" id="hardAmt">—</div>
+    </div>
+    <div class="s">
+      <span class="badge b-soft">軟成本 · 時間回收</span>
+      <h4>老師與行政的時間</h4>
+      <p>帳務、備課、課後紀錄、家長回覆。每一項都是每個月重複發生、而且永遠擠在月底那三天的事。</p>
+      <div class="amt s" id="softAmt">—</div>
+    </div>
+    <div class="s">
+      <span class="badge b-strat">營收面</span>
+      <h4>招生季的承接能力</h4>
+      <p>招生季家長詢問量是平常的 3 倍，回覆慢就流失。你的容量以前受限于一個櫃檯，現在不會。</p>
+      <div class="amt" style="color:var(--warn)">看得到、量不到</div>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>誠實說明：</strong>第二項（時間回收）換算出的金額，通常<strong>低於</strong>我們的月費——因為把老師的時間變成錢，本來就不划算。<br>
+    真正划算的是第一項（人力替代）。簽約前，請先用我們的試算器算一次，再決定值不值得。數字攤開來講，比講完再報價誠實。
+  </div>
+
+  <h2><span class="n">2</span>投資試算</h2>
+  <p class="lede">把下表的數字改成你的實際狀況，所有結果即時重算。</p>
+
+  <div class="calc">
+    <div class="calc-h">每月省下的時間與人力
+      <small>全部假設列在頁尾「計算依據」，可以逐項檢視。</small>
+    </div>
+    <div class="inputs">
+      <div class="f">
+        <label>學生人數</label>
+        <input type="number" id="students" value="60" min="1" step="1">
+        <span class="hint">在學學生，不含已結課</span>
+      </div>
+      <div class="f">
+        <label>專任老師人數</label>
+        <input type="number" id="teachers" value="3" min="1" step="1">
+        <span class="hint">需備課、需記錄課後狀況的人</span>
+      </div>
+      <div class="f">
+        <label>每位家長每月傳訊息數</label>
+        <input type="number" id="msgs" value="4" min="0" step="1">
+        <span class="hint">報名季會到 8–10 則</span>
+      </div>
+      <div class="f">
+        <label>每位老師每週上課堂數</label>
+        <input type="number" id="classes" value="6" min="0" step="1">
+        <span class="hint">含各年級各班的時段</span>
+      </div>
+      <div class="f">
+        <label>第一年可達成率 (%)</label>
+        <input type="number" id="adopt" value="60" min="0" max="100" step="5">
+        <span class="hint">剛導入不會 100%，建議 50–70</span>
+      </div>
+      <div class="f">
+        <label>換算時薪 (NT$)</label>
+        <input type="number" id="hourly" value="196" min="1" step="1">
+        <span class="hint">2026 年法定最低時薪 196 元<br>2027/1 起為 205 元</span>
+      </div>
+      <div class="f">
+        <label>預估可減少的兼職人力</label>
+        <input type="number" id="fte" value="1" min="0" step="0.5">
+        <span class="hint">0 = 只回收時間，不動人力</span>
+      </div>
+      <div class="f">
+        <label>一位兼職櫃檯月成本 (NT$)</label>
+        <input type="number" id="ftecost" value="20400" min="0" step="100">
+        <span class="hint">4 小時/天 × 26 天 × 196 元</span>
+      </div>
+    </div>
+
+    <div class="rows">
+      <div class="row">
+        <span class="k">① 帳務與收款<em>對帳表、每人一份收據、列印歸檔</em></span>
+        <span class="v" id="rAcct">—</span>
+      </div>
+      <div class="row">
+        <span class="k">② 家長 LINE 訊息<em id="msgDetail">—</em></span>
+        <span class="v" id="rMsg">—</span>
+      </div>
+      <div class="row">
+        <span class="k">③ 備課與課後紀錄<em id="clsDetail">—</em></span>
+        <span class="v" id="rPrep">—</span>
+      </div>
+      <div class="row" style="border-top:2px solid var(--line);padding-top:15px;margin-top:6px">
+        <span class="k"><strong>時間回收小計</strong><em>① + ② + ③，已套用可達成率</em></span>
+        <span class="v" id="rTotalH">—</span>
+      </div>
+      <div class="row">
+        <span class="k"><strong>換算金額</strong><em>時薪 × 小時數</em></span>
+        <span class="v" id="rTotalM">—</span>
+      </div>
+      <div class="row">
+        <span class="k"><strong>人力替代</strong><em id="fteDetail">—</em></span>
+        <span class="v" id="rHard">—</span>
+      </div>
+    </div>
+
+    <div class="total">
+      <div class="lbl">每月可量化的效益
+        <small>時間回收 + 人力替代</small>
+      </div>
+      <div class="num" id="grand">—<small id="grandNote">—</small></div>
+    </div>
+
+    <div class="verdict mid" id="verdict"></div>
+  </div>
+
+  <h2><span class="n">3</span>我們怎麼開始</h2>
+  <p class="lede">不是一次買斷一套系統。先把地基架好，之後你要什麼，就長什麼。</p>
+
+  <div class="ph">
+    <div>
+      <div class="pn">PHASE 0</div>
+      <h5>基礎建設</h5>
+      <ul>
+        <li>雲端主機與環境</li>
+        <li>Google Workspace（試算表、文件、雲端硬碟）</li>
+        <li>GitHub 版本控管</li>
+        <li>LINE 官方帳號開通</li>
+        <li>AI Agent 執行環境</li>
+      </ul>
+      <div class="when">一次性 · 你的資料從這裡開始有歸屬</div>
+    </div>
+    <div>
+      <div class="pn">PHASE 1</div>
+      <h5>對外窗口</h5>
+      <ul>
+        <li>官方網站（含招生頁）</li>
+        <li>LINE 官方帳號串接</li>
+        <li>基本自動回覆與轉真人</li>
+        <li>家長常見問題建檔</li>
+      </ul>
+      <div class="when">一次性 + 月費 · 外面的人看得到的部分</div>
+    </div>
+    <div>
+      <div class="pn">PHASE 2</div>
+      <h5>內部營運</h5>
+      <ul>
+        <li>帳務對帳與收據</li>
+        <li>老師備課表單</li>
+        <li>課次紀錄與進度</li>
+        <li>到課 / 請假統計</li>
+      </ul>
+      <div class="when">每個模組分別計價 · 老師端上線</div>
+    </div>
+    <div>
+      <div class="pn">PHASE 3+</div>
+      <h5>依你的需求長</h5>
+      <ul>
+        <li>用你們教材訓練的客服</li>
+        <li>單字音檔 / 影片內容</li>
+        <li>語音接線</li>
+        <li>家長端學習紀錄</li>
+        <li>報表與預警</li>
+      </ul>
+      <div class="when">一個需求一個方案 · 不綁約</div>
+    </div>
+  </div>
+
+  <h2><span class="n">4</span>為什麼不能直接用 ChatGPT</h2>
+  <p class="lede">這個問題每個客戶都會問，答案有三個。</p>
+
+  <div class="tblwrap">
+    <table>
+      <thead><tr><th style="width:26%"></th><th style="width:37%">ChatGPT / 一般 AI</th><th style="width:37%">CooTai 系統</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>它知道你的課綱嗎</strong></td>
+          <td>不知道。你要自己複製貼上。</td>
+          <td>整個課綱、字彙、文法、教材都是它的知識庫。</td>
+        </tr>
+        <tr>
+          <td><strong>可以幫你開會收單嗎</strong></td>
+          <td>不能。它只會打字。</td>
+          <td>可以直接寫進你的對帳表、發出收據、排進課表。</td>
+        </tr>
+        <tr>
+          <td><strong>三個月後還在嗎</strong></td>
+          <td>對話紀錄關掉就沒了。</td>
+          <td>資料存在你的 Google 雲端硬碟，隨時可匯出、可交接。</td>
+        </tr>
+        <tr>
+          <td><strong>誰在維護</strong></td>
+          <td>你自己。</td>
+          <td>我們。你只負責回答「要加什麼」。</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2><span class="n">5</span>我們自己就是第一個客戶</h2>
+  <p class="lede">我們在自家經營的英語補習班，每天實際用這套系統：家長詢問、課程資訊、繳費提醒、月度收據、老師備課，都是同一套邏輯。推薦給你的，我們自己都在用。</p>
+
+  <div class="card">
+    <p style="margin:0 0 14px;font-size:14.5px;color:var(--muted);line-height:1.8">
+      60+ 位學生 · 3 位老師 · 每級教材不同 · 學期先繳與月繳並行 · 假日停課規則 · 國中生不放假 · 分潤給合夥人<br>
+      <span style="color:var(--ink);font-weight:600">上面每一條規則，我們都已經寫成可以重跑的程式。</span>
+    </p>
+    <p style="margin:0;font-size:14.5px;color:var(--muted);line-height:1.8">
+      這代表換到你的補習班時，我們要重新學的是「你的規則」，不是「AI 怎麼運作」。
+    </p>
+  </div>
+
+  <div class="cta">
+    <h4>先聊 20 分鐘，我們幫你找出最值得自動化的地方</h4>
+    <p>不加任何壓力。聊完你會拿到一份屬於你們的試算表，不是通用簡報。</p>
+  </div>
+
+  <details>
+    <summary>計算依據與假設（請逐項檢視）</summary>
+    <div class="assume">
+      <ul>
+        <li><strong>① 帳務：</strong>基礎作業 70 分鐘（讀名冊、對帳、跟銀行核對、月底更正），加每位學生 2.5 分鐘（填單、列印、排序、歸檔）。實際量測自 58 份收據的批次流程。</li>
+        <li><strong>② 家長訊息：</strong>每位學生 2 位聯絡人，65% 訊息屬可自動化型態（時間、請假、費用、地址、進度），單則人工回覆抓 2 分鐘。</li>
+        <li><strong>③ 備課紀錄：</strong>每堂課備課 30 分鐘（可自動 40%）、課後紀錄 10 分鐘（可自動 70%），每月 4.3 週。</li>
+        <li><strong>可達成率：</strong>套用在 ①②③ 的總和。剛導入不會 100%，預設 60%。</li>
+        <li><strong>時薪 196 元：</strong>2026 年法定最低時薪（勞動部 2025/10/21 公告，2026/1/1 生效）。2027 年 1 月起調升至 205 元。</li>
+        <li><strong>兼職櫃檯 20,400 元：</strong>196 元 × 4 小時 × 26 天，未含勞健保與勞退提繳。實際成本通常再加一成。</li>
+        <li><strong>未計入：</strong>招生季產能、漏繳減少、現金流改善。這三項真實存在但難以定價，不列入計算。</li>
+      </ul>
+    </div>
+  </details>
+
+  <footer>
+    CooTai 酷台 · COO + AI<br>
+    本頁為試算工具，數據依你輸入的假設即時計算。<br>
+    報價與方案以正式提案為準。
+  </footer>
+</div>
+
+<script>
+const F = id => parseFloat(document.getElementById(id).value) || 0;
+const fmt = n => 'NT$ ' + Math.round(n).toLocaleString('en-US');
+const hrs = n => n.toFixed(1) + ' 小時';
+
+function calc(){
+  const N = F('students'), T = F('teachers'), M = F('msgs');
+  const C = F('classes'), R = F('adopt')/100, V = F('hourly');
+  const FTE = F('fte'), FTEC = F('ftecost');
+
+  // ① 帳務：70 分鐘基礎 + 2.5 分鐘/生
+  const hAcct = (70 + N*2.5) / 60;
+
+  // ② 家長訊息：N×2 位聯絡人 × M 則 × 2 分鐘 × 65% 可自動化
+  const contacts = N * 2, msgs = contacts * M;
+  const hMsg = (msgs * 2 * 0.65) / 60;
+
+  // ③ 備課紀錄：C 堂 × (30×0.40 + 10×0.70) 分 / 老師 / 週 × 4.3 週 × T
+  const hPrep = T * C * ((30*0.40) + (10*0.70)) / 60 * 4.3;
+
+  const softH = (hAcct + hMsg + hPrep) * R;
+  const softM = softH * V;
+  const hardM = FTE * FTEC;
+  const grand = softM + hardM;
+
+  document.getElementById('rAcct').textContent     = hrs(hAcct);
+  document.getElementById('rMsg').textContent      = hrs(hMsg);
+  document.getElementById('rPrep').textContent     = hrs(hPrep);
+  document.getElementById('rTotalH').textContent   = hrs(softH) + ' / 月';
+  document.getElementById('rTotalM').textContent   = fmt(softM) + ' / 月';
+  document.getElementById('rHard').textContent     = hardM > 0 ? fmt(hardM) + ' / 月' : '未計入';
+
+  document.getElementById('softAmt').textContent = fmt(softM) + ' / 月';
+  document.getElementById('hardAmt').textContent = FTE > 0 ? fmt(hardM) + ' / 月' : '未計入';
+  document.getElementById('msgDetail').textContent =
+    contacts.toLocaleString() + ' 位聯絡人 × ' + M + ' 則 = ' + msgs.toLocaleString() + ' 則/月';
+  document.getElementById('clsDetail').textContent =
+    T + ' 位老師 × 每週 ' + C + ' 堂 × 每月 4.3 週';
+  document.getElementById('fteDetail').textContent =
+    FTE > 0 ? FTE + ' 位兼職 × ' + FTEC.toLocaleString() + ' 元（未含勞健保）' : '不動人力，僅回收時間';
+
+  document.getElementById('grand').innerHTML =
+    fmt(grand) + '<small>每月 · ' + hrs(softH) + '時間回收' + (FTE>0 ? ' + ' + FTE + ' 位兼職' : '') + '</small>';
+
+  const v = document.getElementById('verdict');
+  if (FTE <= 0){
+    v.className = 'verdict mid';
+    v.innerHTML = '<b>目前設定沒有動到人力。</b>時間回收 ' + hrs(softH) + '（' + fmt(softM) + '）在多數情況下會低於我們的月費。' +
+      '把「預估可減少的兼職人力」填 1，看真正划算的那一塊。';
+  } else {
+    const perMonth = softM / Math.max(hardM,1);
+    v.className = 'verdict ok';
+    v.innerHTML = '<b>每月可量化效益 ' + fmt(grand) + '。</b>其中人力替代佔 ' +
+      Math.round(hardM/grand*100) + '%。時間回收 ' + hrs(softH) + ' 相當於 ' + fmt(softM) +
+      '（約為人力替代金額的 ' + Math.round(softM/Math.max(hardM,1)*100) + '%）。' +
+      '請注意：這是<b>上限</b>。實際成效取決於可達成率，以及你是否真的把省下來的職缺轉掉。';
+  }
+}
+
+document.querySelectorAll('.calc input').forEach(i => i.addEventListener('input', calc));
+calc();
+</script>
+</body>
+</html>
