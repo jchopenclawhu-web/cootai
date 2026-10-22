@@ -133,6 +133,43 @@ def log_inquiry(user_id, text, src, reply):
         log(f"inquiry log error: {e!r}")
 
 
+RETENTION_DAYS = int(os.environ.get("RETENTION_DAYS", "90"))
+
+
+def purge_old_inquiries():
+    """Delete inquiry records older than RETENTION_DAYS (privacy policy §4)."""
+    path = os.path.join(BASE_DIR, "inquiries.jsonl")
+    if not os.path.exists(path):
+        return 0
+    cutoff = time.time() - RETENTION_DAYS * 86400
+    kept, removed = [], 0
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    ts = json.loads(line).get("ts", "")
+                    when = time.mktime(time.strptime(ts, "%Y-%m-%dT%H:%M:%S"))
+                except (ValueError, KeyError):
+                    kept.append(line)
+                    continue
+                if when >= cutoff:
+                    kept.append(line)
+                else:
+                    removed += 1
+        if removed:
+            tmp = path + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                f.write("\n".join(kept) + ("\n" if kept else ""))
+            os.replace(tmp, path)
+            log(f"retention: purged {removed} record(s) older than {RETENTION_DAYS}d")
+    except OSError as e:
+        log(f"retention purge error: {e!r}")
+    return removed
+
+
 def llm_reply(text, history=None):
     """Ask the LLM for a grounded answer. Returns None on any failure."""
     key = get_llm_key()
@@ -470,7 +507,17 @@ if __name__ == "__main__":
         except Exception as e:
             log(f"Whisper warmup failed: {e!r}")
 
+    def _retention_loop():
+        # Purge at boot, then every 24h (privacy policy §4: 90-day retention)
+        while True:
+            try:
+                purge_old_inquiries()
+            except Exception as e:
+                log(f"retention loop error: {e!r}")
+            time.sleep(86400)
+
     threading.Thread(target=_warm, daemon=True, name="whisper-warmup").start()
+    threading.Thread(target=_retention_loop, daemon=True, name="retention").start()
 
     server = make_server("0.0.0.0", port, app)
     server.serve_forever()

@@ -8,7 +8,20 @@
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<meta property="og:image" content="https://cootai.tw/icon-512.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="CooTai 酷台">
+<meta property="og:title" content="CooTai 酷台 — 你的 AI 營運長">
+<meta property="og:description" content="診所、餐廳、補習班、貿易、會計事務所專屬的 AI 助手。自動回覆、聽得懂中文語音、24 小時不休息。">
+<meta property="og:url" content="https://cootai.tw/">
+<meta property="og:image" content="https://cootai.tw/brand/og_card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="zh_TW">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CooTai 酷台 — 你的 AI 營運長">
+<meta name="twitter:description" content="診所、餐廳、補習班、貿易、會計事務所專屬的 AI 助手。自動回覆、聽得懂中文語音、24 小時不休息。">
+<meta name="twitter:image" content="https://cootai.tw/brand/og_card.png">
+<link rel="canonical" href="https://cootai.tw/">
 <style>
   :root {
     --ink: #1a2332;
@@ -72,39 +85,53 @@
   .btn.ghost { background: transparent; color: var(--brand); border: 1.5px solid var(--brand); }
   .btn.ghost:hover { background: var(--soft); }
 
+  /* Cost comparison block */
+  .cost-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin: 38px 0 26px; }
+  .cc-col { border: 1px solid var(--line); border-radius: 16px; padding: 26px 28px; background: #fff; }
+  .cc-col.highlight { border: 2px solid var(--orange); box-shadow: 0 8px 30px rgba(255,107,53,.13); }
+  .cc-label { font-weight: 800; font-size: 17px; margin-bottom: 16px; color: var(--navy); }
+  .cc-row { display: flex; justify-content: space-between; gap: 14px; padding: 10px 0; border-bottom: 1px dashed var(--line); font-size: 14.5px; }
+  .cc-row:last-child { border-bottom: 0; }
+  .cc-row span { color: var(--muted); }
+  .cc-row strong { color: var(--navy); white-space: nowrap; }
+  .cc-row strong.bad { color: #c0392b; }
+  .cc-row strong.good { color: #0f9d58; }
+  .cc-verdict { text-align: center; font-size: 16px; line-height: 2; color: var(--muted); margin: 0 auto 46px; max-width: 720px; }
+  .cc-verdict strong { color: var(--navy); }
+  .plan-note { font-size: 13px; color: var(--muted); margin: -6px 0 14px; }
+  .invoice-note {
+    margin-top: 34px; padding: 20px 24px; background: var(--soft);
+    border-radius: 12px; font-size: 14.5px; color: var(--muted);
+  }
+  .invoice-note strong { color: var(--navy); }
+  @media (max-width: 760px) { .cost-compare { grid-template-columns: 1fr; } }
+
   /* Brand-name section */
   #name { padding: 80px 0; }
-  .name-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 40px; }
-  .name-card {
-    background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 34px;
-    box-shadow: 0 6px 24px rgba(18,38,63,.05);
-  }
-  .name-label {
-    display: inline-block; font-weight: 800; font-size: 24px; letter-spacing: 1px;
-    color: #fff; background: var(--navy); padding: 6px 16px; border-radius: 9px;
-  }
-  .name-label.alt { background: var(--violet); }
-  .name-card h3 { margin: 18px 0 12px; font-size: 24px; }
-  .name-card p { color: var(--muted); margin-bottom: 12px; }
-  .name-card strong { color: var(--navy); }
   .name-note {
     margin-top: 18px; padding-top: 16px; border-top: 1px dashed var(--line);
     color: var(--navy) !important; font-weight: 600;
   }
-  @media (max-width: 760px) { .name-grid { grid-template-columns: 1fr; } }
-  .name-strip {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 26px;
-    background: var(--soft); border-radius: 16px; padding: 26px;
+  .stat-foot { font-size: 12.5px; color: var(--muted); margin-top: 18px; line-height: 1.7; }
+
+  /* Privacy band in services */
+  .privacy-band {
+    display: flex; gap: 20px; align-items: flex-start; margin-top: 40px;
+    background: #f0f6ff; border: 1px solid #cfe0ff; border-left: 4px solid var(--brand);
+    border-radius: 14px; padding: 26px 28px;
   }
-  .ns-item { text-align: center; }
-  .ns-key {
-    display: inline-block; font-weight: 800; font-size: 15px; letter-spacing: .5px;
-    color: var(--navy); background: #fff; border: 1.5px solid var(--line);
-    padding: 4px 12px; border-radius: 7px; margin-bottom: 10px;
-  }
-  .ns-item p { color: var(--navy); font-weight: 700; font-size: 15px; line-height: 1.5; }
-  .ns-item small { color: var(--muted); font-weight: 400; font-size: 12px; }
-  @media (max-width: 760px) { .name-strip { grid-template-columns: repeat(2, 1fr); } }
+  .pb-icon { font-size: 30px; line-height: 1; flex: 0 0 auto; }
+  .privacy-band h3 { font-size: 19px; margin-bottom: 10px; }
+  .privacy-band p { color: var(--muted); font-size: 15px; margin-bottom: 14px; }
+  .privacy-band p strong { color: var(--navy); }
+  .btn.small { padding: 8px 16px; font-size: 14px; }
+  @media (max-width: 640px) { .privacy-band { flex-direction: column; gap: 12px; padding: 22px; } }
+  /* Compressed brand line */
+  #name { padding: 46px 0; background: var(--soft); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .name-line { text-align: center; font-size: 16.5px; color: var(--navy); line-height: 2; }
+  .name-line strong { color: var(--navy); font-weight: 800; }
+  .name-sub { text-align: center; color: var(--muted); font-size: 15px; margin-top: 8px; }
+  @media (max-width: 640px) { .name-line { font-size: 14.5px; } }
 
   /* Hero */
   .hero { padding: 84px 0 70px; background: radial-gradient(1200px 500px at 80% -10%, #eaf0ff, #fff 60%); }
@@ -251,7 +278,7 @@
     <nav class="nav-links">
       <a href="#services">服務</a>
       <a href="#name">品牌</a>
-      <a href="#case">案例</a>
+      <a href="#case">我們自己</a>
       <a href="#pricing">方案</a>
       <a href="#process">流程</a>
       <a href="#contact">聯絡</a>
@@ -312,6 +339,15 @@
       <div class="card"><div class="ico">🧾</div><h3>會計 / 事務所</h3><p>發票與單據資料輸入、客戶資料建檔、繳費到期提醒。</p></div>
       <div class="card"><div class="ico">🔧</div><h3>還不清楚？</h3><p>沒關係，免費聊聊 20 分鐘。我們幫你找出最值得自動化的地方。</p></div>
     </div>
+
+    <div class="privacy-band">
+      <div class="pb-icon">🔒</div>
+      <div>
+        <h3>病患、學生資料會不會外流？</h3>
+        <p><strong>主機在台灣、由我們自己管理，對話資料不外傳、不販售。</strong>常見問題在本機回覆、完全不離開主機；非預設問題才會使用 AI 模型，且可依需求<strong>完全關閉</strong>。對話預設保留 90 天後自動刪除。我們自己的補習班用的就是同一套系統。</p>
+        <a href="/privacy.html" class="btn ghost small">看完整資料處理說明 →</a>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -321,54 +357,34 @@
     <div>
       <div class="sec-head" style="margin-bottom: 0;">
         <h2>我們自己就是第一家客戶</h2>
-        <p style="margin-top: 14px;">我們在自家經營的英語補習班，實際用 AI 自動化日常運作——從家長詢問、課程資訊、到繳費提醒都交給 AI 助手處理。所以我們推薦的方案，都是自己每天都在用的。</p>
+        <p style="margin-top: 14px;">我們在自家經營的英語補習班，每天實際使用這套系統——家長詢問、課程資訊、繳費提醒都交給 AI 助手處理。所以我們推薦的方案，都是自己每天都在用的。</p>
       </div>
       <div class="stat-row">
         <div class="stat"><span>24/7</span><p>不間斷自動回覆</p></div>
-        <div class="stat"><span>秒回</span><p>顧客不必等上班時間</p></div>
-        <div class="stat"><span>少請 1 人</span><p>省下一位櫃檯的人力成本</p></div>
+        <div class="stat"><span>秒回</span><p>文字訊息即時回應</p></div>
+        <div class="stat"><span>4–5 秒</span><p>中文語音轉文字並回覆</p></div>
       </div>
+      <p class="stat-foot">※ 以上為我們系統實測數據。人力節省幅度依各業態不同，我們會在免費評估時用您的實際數字試算。</p>
     </div>
     <div>
       <div class="card" style="padding: 34px;">
         <h3>「真的把時間還給了我們」</h3>
         <p style="margin-top: 14px;">我們是從「自家生意」開始做起的。因為自己就是老闆，才最懂中小企業那種『什麼都要自己來』的辛苦。用 AI 把重複的事接手之後，我們終於能把時間花在真正重要的地方。</p>
-        <p style="margin-top: 22px; color: var(--muted); font-size: 14px;">— CooTai 酷台 創辦團隊<br>(經營英語美語教室超過持續投入)</p>
+        <p style="margin-top: 22px; color: var(--muted); font-size: 14px;">— CooTai 酷台 創辦團隊<br>我們同時經營一所英語補習班，每天使用同一套系統</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- Brand story -->
+<!-- Brand story (compressed: 3 lines) -->
 <section id="name">
   <div class="container">
-    <div class="sec-head center">
-      <h2>名字裡的三個意思</h2>
-      <p>CooTai 酷台，是一個關於「誰來幫你經營」的名字。</p>
-    </div>
-    <div class="name-grid">
-      <div class="name-card">
-        <div class="name-label">COO</div>
-        <h3>營運長</h3>
-        <p><strong>COO = Chief Operating Officer，中文是「營運長」。</strong></p>
-        <p>一間公司裡，執行長負責方向，營運長負責把每天的營運管好——流程、客戶、預約、帳務。這正是我們想替你扮演的角色。</p>
-        <p class="name-note">我們不是再給你一套軟體，而是幫你請一位請得起的營運長。</p>
-      </div>
-      <div class="name-card">
-        <div class="name-label alt">AI</div>
-        <h3>人工智慧</h3>
-        <p><strong>名稱裡的 AI，就是 Artificial Intelligence——人工智慧。</strong></p>
-        <p>而「台」，是平台，也是台灣。<br>COO + AI 合在一起，就是：<br>一個用人工智慧運作的營運平台，而且是在地台灣團隊。</p>
-        <p class="name-note">所以我們叫 CooTai 酷台——你的 AI 營運長。</p>
-      </div>
-    </div>
-
-    <div class="name-strip">
-      <div class="ns-item"><span class="ns-key">COO</span><p>營運長<br><small>Chief Operating Officer</small></p></div>
-      <div class="ns-item"><span class="ns-key">AI</span><p>人工智慧<br><small>Artificial Intelligence</small></p></div>
-      <div class="ns-item"><span class="ns-key">台</span><p>平台．台灣<br><small>Platform in Taiwan</small></p></div>
-      <div class="ns-item"><span class="ns-key">酷</span><p>酷<br><small>Cool — 好用、不複雜</small></p></div>
-    </div>
+    <p class="name-line">
+      <strong>COO</strong> = 營運長（Chief Operating Officer）　·　
+      <strong>AI</strong> = 人工智慧（Artificial Intelligence）　·　
+      <strong>台</strong> = 平台，也是台灣
+    </p>
+    <p class="name-sub">CooTai 酷台 ＝ 用 AI 幫你做好營運，一個在台灣、你訂閱得起的營運平台。</p>
   </div>
 </section>
 
@@ -376,13 +392,38 @@
 <section id="pricing">
   <div class="container">
     <div class="sec-head center">
-      <h2>簡單透明的月費方案</h2>
-      <p>就像租用一位你請得起的專屬員工，不需要一次買斷昂貴軟體。</p>
+      <h2>先算這筆帳，再談方案</h2>
+      <p>不要拿功能來比，拿你現在的櫃檯人事成本來比。</p>
     </div>
+
+    <div class="cost-compare">
+      <div class="cc-col">
+        <div class="cc-label">你現在的櫃檯</div>
+        <div class="cc-row"><span>兼職時薪（2026 法定最低）</span><strong>NT$196 / 時</strong></div>
+        <div class="cc-row"><span>每天 4 小時 × 22 天</span><strong>NT$17,248 / 月</strong></div>
+        <div class="cc-row"><span>會請假、會離職、下班就不回</span><strong class="bad">要排班</strong></div>
+        <div class="cc-row"><span>重複問題仍要一個一個回</span><strong class="bad">佔掉 40% 時間</strong></div>
+      </div>
+      <div class="cc-col highlight">
+        <div class="cc-label">CooTai 入門方案</div>
+        <div class="cc-row"><span>月費</span><strong>NT$15,000 / 月</strong></div>
+        <div class="cc-row"><span>換算</span><strong>≈ 76 小時的基本時薪</strong></div>
+        <div class="cc-row"><span>或這樣看</span><strong class="good">一天 NT$500</strong></div>
+        <div class="cc-row"><span>凌晨兩點、過年、颱風天</span><strong class="good">照樣秒回</strong></div>
+      </div>
+    </div>
+
+    <p class="cc-verdict">
+      一位兼職櫃檯一個月約 <strong>NT$17,000</strong>，而且只做白天。<br>
+      CooTai 一個月 <strong>NT$15,000</strong>，把那些重複、無聊、佔掉你 40% 時間的問題全部接走——<br>
+      <strong>你原本的員工，就能專心做只有人做得到的事。</strong>
+    </p>
+
     <div class="pricing">
       <div class="plan">
         <h4>入門方案</h4>
         <div class="price">NT$15,000<small> / 月</small></div>
+        <p class="plan-note">一天 NT$500，比一個兼職的白天班還便宜</p>
         <ul>
           <li>1 個 AI 助手</li>
           <li>基礎 Line 整合</li>
@@ -395,6 +436,7 @@
         <span class="ribbon">最受歡迎</span>
         <h4>標準方案</h4>
         <div class="price">NT$25,000<small> / 月</small></div>
+        <p class="plan-note">約等於一位全職工讀生的成本，但不會離職</p>
         <ul>
           <li>2–3 個 AI 助手</li>
           <li>自動化流程整合</li>
@@ -407,6 +449,7 @@
       <div class="plan">
         <h4>進階方案</h4>
         <div class="price">NT$40,000+<small> / 月</small></div>
+        <p class="plan-note">整合既有系統、多流程自動化</p>
         <ul>
           <li>客製化多流程自動化</li>
           <li>電話語音助手</li>
@@ -416,6 +459,10 @@
         </ul>
         <a href="#contact" class="btn ghost">洽詢此方案</a>
       </div>
+    </div>
+
+    <div class="invoice-note">
+      <p><strong>合約與收款</strong>　提供書面服務合約、月結匯款與收據。若您需要開立統一發票報帳，請於洽詢時告知，我們會說明目前的開立方式。</p>
     </div>
   </div>
 </section>
@@ -440,9 +487,9 @@
 <!-- CTA -->
 <section id="contact" class="container" style="padding-bottom: 90px;">
   <div class="cta">
-    <h2>準備好把時間還給自己了嗎？</h2>
-    <p>先免費聊 20 分鐘，我們幫你找出最值得自動化的地方。不加任何壓力，聊完你再決定。</p>
-    <a href="https://line.me/R/ti/p/@127bwuyu" class="btn">透過 Line 免費諮詢</a>
+    <h2>讓我幫你算這筆帳</h2>
+    <p>20 分鐘免費諮詢，我們不講功能，直接用你現在的櫃檯人事成本，算出導入 AI 後一個月省多少、幾個月回本。帶著數字離開，你再決定要不要做。</p>
+    <a href="https://line.me/R/ti/p/@127bwuyu" class="btn">透過 Line 預約試算</a>
     <p style="margin-top: 16px; font-size: 14px; opacity: 0.85;">📍 新北市林口區　·　📞 0911-128-881</p>
   </div>
 </section>
@@ -468,7 +515,7 @@
         </ul>
       </div>
     </div>
-    <p class="copy">© <span id="yr"></span> CooTai 酷台 · 保留所有權利</p>
+    <p class="copy">© <span id="yr"></span> CooTai 酷台 · 保留所有權利　·　<a href="/privacy.html" style="color:inherit;text-decoration:underline;">隱私權政策與資料處理</a></p>
   </div>
 </footer>
 
