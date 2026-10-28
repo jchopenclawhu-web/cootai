@@ -100,10 +100,13 @@ ExecStart=/bin/bash -c 'PORT=$(grep "^%i:" /srv/cootai/ports | cut -d: -f2); \
   exec /srv/cootai/clients/%i/venv/bin/python /srv/cootai/clients/%i/agent/webhook.py'
 Restart=always
 RestartSec=5
-# hardening
+# hardening — keep in sync with docs/技術特性說明書.md §6
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
 ReadWritePaths=/srv/cootai/clients/%i/agent
 
 [Install]
