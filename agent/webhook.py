@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """CooTai LINE auto-reply agent webhook (text + Chinese voice messages)."""
 import base64
+import csv
 import hashlib
 import hmac
+import io
 import json
 import os
 import subprocess
@@ -10,6 +12,8 @@ import tempfile
 import time
 import urllib.request
 import wave
+from collections import OrderedDict
+from urllib.parse import parse_qs
 
 import numpy as np
 
@@ -389,6 +393,43 @@ def _history(user_id):
 # LINE hard limit is 5000 chars; keep well under it.
 MAX_REPLY = 1500
 
+# Hard cap on request body size, enforced before reading and before
+# signature verification. LINE webhook payloads are far smaller than this.
+MAX_BODY_BYTES = 65536
+
+
+# ---- rate limiting: paid model calls and owner notifications ----
+# Both buckets are bounded so this cannot become the unbounded-growth bug it fixes.
+_LIMIT_MAX_USERS = 5000
+_LIMITS = {
+    "llm":    (OrderedDict(), int(os.environ.get("MAX_LLM_PER_HOUR", "20"))),
+    "notify": (OrderedDict(), int(os.environ.get("MAX_NOTIFY_PER_HOUR", "10"))),
+}
+
+
+def _allowed(kind, user_id):
+    """Per-user hourly token bucket, checked immediately before the spend."""
+    # Events without a userId (rare on a 1:1 account) share one fallback bucket
+    # rather than being refused outright, so they stay usable but still bounded.
+    key = user_id or "__anonymous__"
+    bucket, cap = _LIMITS[kind]
+    now = time.time()
+    start, count = bucket.get(key, (now, 0))
+    if now - start > 3600:
+        start, count = now, 0
+    ok = count < cap
+    bucket[key] = (start, count + 1) if ok else (start, count)
+    bucket.move_to_end(key)
+    while len(bucket) > _LIMIT_MAX_USERS:
+        bucket.popitem(last=False)
+    return ok
+
+
+RATE_LIMITED = (
+    "謝謝您的訊息！為了確保回覆品質，今天的訊息量先到這邊。\n"
+    "需要專人協助的話，請留下聯絡方式，我們會在上班時間儘快與您聯繫。"
+)
+
 
 def compose_reply(text, user_id=None):
     """Rule engine first (fast, free, exact); LLM fallback for anything else."""
@@ -399,7 +440,11 @@ def compose_reply(text, user_id=None):
         _remember(user_id, "assistant", reply)
         return reply, f"rule:{intent}"
 
-    # No rule matched -> ask the LLM, grounded in Company Facts
+    # No rule matched -> paid model. Gate it before spending.
+    if not _allowed("llm", user_id):
+        log("LLM: rate limited")
+        return RATE_LIMITED, "rate_limited"
+
     llm = llm_reply(text, history=_history(user_id))
     if llm:
         _remember(user_id, "user", text)
@@ -420,15 +465,20 @@ def handle(event):
 
     if mtype == "text":
         text = msg.get("text", "")
-        log(f"TEXT  <- {text!r}")
+        # Metadata only: the message body lives in inquiries.jsonl, which the
+        # retention routine prunes. Writing it to the journal too created a
+        # second copy that outlived the stated 90-day retention.
+        log(f"TEXT  <- len={len(text)}")
         reply, src = compose_reply(text, user_id)
         log(f"TEXT  -> {src}")
         log_inquiry(user_id, text, src, reply)
         if src == "llm":
             # Unscripted question = genuine inquiry -> alert the owner
-            notify_owner(text, user_id, "inquiry")
+            if _allowed("notify", user_id):
+                notify_owner(text, user_id, "inquiry")
         elif src == "rule:booking":
-            notify_owner(text, user_id, "booking")
+            if _allowed("notify", user_id):
+                notify_owner(text, user_id, "booking")
         if token:
             send_reply(token, reply[:MAX_REPLY])
         return
@@ -448,14 +498,18 @@ def handle(event):
             if token:
                 send_reply(token, "不好意思，我沒聽清楚，可以再說一次嗎？")
             return
-        log(f"AUDIO -> transcribed {text!r}")
+        # Metadata only, same reason as the text branch: no second copy outside
+        # the pruned inquiry log.
+        log(f"AUDIO -> transcribed len={len(text)}")
         reply, src = compose_reply(text, user_id)
         log(f"AUDIO -> {src}")
         log_inquiry(user_id, text, f"voice:{src}", reply)
         if src == "llm":
-            notify_owner(f"（語音）{text}", user_id, "inquiry")
+            if _allowed("notify", user_id):
+                notify_owner(f"（語音）{text}", user_id, "inquiry")
         elif src == "rule:booking":
-            notify_owner(f"（語音）{text}", user_id, "booking")
+            if _allowed("notify", user_id):
+                notify_owner(f"（語音）{text}", user_id, "booking")
         # Echo the transcript so the user knows we heard them correctly
         reply = f"（我聽到的是：「{text}」）\n\n" + reply
         if token:
@@ -467,12 +521,78 @@ def handle(event):
         send_reply(token, "目前我可以處理文字與語音訊息，請用文字或語音輸入，謝謝！")
 
 
+def _export_csv():
+    """Render inquiries.jsonl as a UTF-8 CSV for the client's data-portability right.
+
+    Required by the 商業發展署 智慧轉型方案 推廣計畫書 (店家資料自主權).
+    All rows we hold come back, including the userId, so the client receives the
+    complete record rather than a curated summary.
+    """
+    path = os.path.join(BASE_DIR, "inquiries.jsonl")
+    rows = [["時間", "使用者ID", "訊息內容", "來源", "回覆摘要"]]
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    r = json.loads(line)
+                except ValueError:
+                    continue
+                rows.append([r.get("ts", ""), r.get("userId", ""), r.get("text", ""),
+                             r.get("source", ""), r.get("reply", "")])
+    except FileNotFoundError:
+        pass
+    buf = io.StringIO()
+    # BOM so Excel opens Traditional Chinese correctly instead of mojibake
+    buf.write("\ufeff")
+    csv.writer(buf).writerows(rows)
+    return buf.getvalue().encode("utf-8")
+
+
 def app(environ, start_response):
+    path = environ.get("PATH_INFO", "/")
+
+    # Data portability endpoint (GET /export?token=...). Disabled unless a token
+    # is configured, so an unconfigured deployment cannot leak conversations.
+    if path == "/export":
+        if environ["REQUEST_METHOD"] != "GET":
+            start_response("405 Method Not Allowed", [("Content-Type", "text/plain")])
+            return [b"GET only"]
+        want = os.environ.get("EXPORT_TOKEN", "") or CREDS.get("export_token", "")
+        if not want:
+            start_response("403 Forbidden", [("Content-Type", "text/plain")])
+            return [b"export disabled"]
+        got = parse_qs(environ.get("QUERY_STRING", "")).get("token", [""])[0]
+        if not hmac.compare_digest(want, got):
+            log("export: rejected bad token")
+            start_response("403 Forbidden", [("Content-Type", "text/plain")])
+            return [b"forbidden"]
+        payload = _export_csv()
+        log(f"export: served {len(payload)} bytes")
+        start_response("200 OK", [
+            ("Content-Type", "text/csv; charset=utf-8"),
+            ("Content-Disposition", 'attachment; filename="cootai-conversations.csv"'),
+            ("Content-Length", str(len(payload))),
+            ("Cache-Control", "no-store"),
+        ])
+        return [payload]
+
     if environ["REQUEST_METHOD"] != "POST":
         start_response("405 Method Not Allowed", [("Content-Type", "text/plain")])
         return [b"POST only"]
 
-    clen = int(environ.get("CONTENT_LENGTH") or 0)
+    # Bound the body BEFORE reading it and before signature verification.
+    # An unbounded read here let an unauthenticated attacker stall the
+    # single-threaded server with a large Content-Length and no body.
+    # LINE webhook payloads are well under this cap.
+    raw_len = environ.get("CONTENT_LENGTH") or "0"
+    if not raw_len.isdigit() or int(raw_len) > MAX_BODY_BYTES:
+        log(f"reject: bad CONTENT_LENGTH={raw_len!r}")
+        start_response("413 Payload Too Large", [("Content-Type", "text/plain")])
+        return [b"bad content length"]
+    clen = int(raw_len)
     body = environ["wsgi.input"].read(clen)
     signature = environ.get("HTTP_X_LINE_SIGNATURE", "")
 
@@ -492,8 +612,15 @@ def app(environ, start_response):
 
 
 if __name__ == "__main__":
-    from wsgiref.simple_server import make_server
+    from wsgiref.simple_server import make_server, WSGIServer
+    from socketserver import ThreadingMixIn
     import threading
+
+    # The default wsgiref server is single-threaded: one slow request blocks
+    # every other client. Thread it so a stalled connection cannot deny
+    # service to real customers.
+    class ThreadingWSGIServer(ThreadingMixIn, WSGIServer):
+        daemon_threads = True
 
     port = int(os.environ.get("PORT", 8080))
     log(f"CooTai LINE agent listening on :{port}")
@@ -519,5 +646,5 @@ if __name__ == "__main__":
     threading.Thread(target=_warm, daemon=True, name="whisper-warmup").start()
     threading.Thread(target=_retention_loop, daemon=True, name="retention").start()
 
-    server = make_server("0.0.0.0", port, app)
+    server = make_server("0.0.0.0", port, app, ThreadingWSGIServer)
     server.serve_forever()
