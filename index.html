@@ -26,7 +26,7 @@
   :root {
     --ink: #1a2332;
     --muted: #5b6b7c;
-    --brand: #2f6bff;
+    --brand: #2b63eb;
     --brand-dark: #1e4fd6;
     --accent: #ffbb3d;
     --bg: #ffffff;
@@ -74,8 +74,8 @@
   }
   .wordmark .ai { color: var(--violet); }
   .nav-links { display: flex; gap: 26px; align-items: center; }
-  .nav-links a { color: var(--ink); text-decoration: none; font-size: 15px; font-weight: 600; }
-  .nav-links a:hover { color: var(--brand); }
+  .nav-links a:not(.btn) { color: var(--ink); text-decoration: none; font-size: 15px; font-weight: 600; }
+  .nav-links a:not(.btn):hover { color: var(--brand); }
   .btn {
     display: inline-block; background: var(--brand); color: #fff; text-decoration: none;
     padding: 11px 20px; border-radius: 10px; font-weight: 700; font-size: 15px;
@@ -83,7 +83,7 @@
   }
   .btn:hover { background: var(--brand-dark); }
   .btn.ghost { background: transparent; color: var(--brand); border: 1.5px solid var(--brand); }
-  .btn.ghost:hover { background: var(--soft); }
+  .btn.ghost:hover { background: var(--brand-dark); color: #fff; border-color: var(--brand-dark); }
 
   /* Cost comparison block */
   .cost-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin: 38px 0 26px; }
@@ -95,7 +95,7 @@
   .cc-row span { color: var(--muted); }
   .cc-row strong { color: var(--navy); white-space: nowrap; }
   .cc-row strong.bad { color: #c0392b; }
-  .cc-row strong.good { color: #0f9d58; }
+  .cc-row strong.good { color: #0d884c; }
   .cc-verdict { text-align: center; font-size: 16px; line-height: 2; color: var(--muted); margin: 0 auto 46px; max-width: 720px; }
   .cc-verdict strong { color: var(--navy); }
   .plan-note { font-size: 13px; color: var(--muted); margin: -6px 0 14px; }
@@ -140,7 +140,7 @@
     display: inline-block; background: #eef3ff; color: var(--brand); font-weight: 700;
     font-size: 13px; padding: 6px 12px; border-radius: 20px; margin-bottom: 18px;
   }
-  .hero h1 { font-size: 42px; line-height: 1.25; font-weight: 900; margin-bottom: 20px; letter-spacing: -0.5px; }
+  .hero h1 { font-size: 42px; line-height: 1.25; font-weight: 900; margin-bottom: 20px; letter-spacing: -0.5px; word-break: keep-all; }
   .hero h1 .hl { color: var(--brand); }
   .hero p.lead { font-size: 18px; color: var(--muted); margin-bottom: 30px; max-width: 520px; }
   .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
@@ -151,15 +151,17 @@
     box-shadow: 0 12px 40px rgba(26,35,50,0.08); padding: 26px;
   }
   .demo-card .chat { font-size: 14.5px; }
-  .msg { display: flex; margin-bottom: 14px; }
+  .msg { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 14px; }
   .msg .bubble {
     max-width: 85%; padding: 12px 16px; border-radius: 14px; background: var(--soft);
     border-bottom-left-radius: 4px;
   }
-  .msg.from-ai { justify-content: flex-end; }
+  .msg.from-ai { align-items: flex-end; }
   .msg.from-ai .bubble { background: var(--brand); color: #fff; border-radius: 14px; border-bottom-right-radius: 4px; }
-  .msg .tag { font-size: 11px; color: var(--muted); margin-top: 6px; }
-  .msg.from-ai .tag { text-align: right; color: #b8c8f5; }
+  /* tag must sit BELOW the bubble at full width: as a side-by-side flex sibling it
+     was squeezed to 58px and wrapped to 5 lines, breaking words mid-character. */
+  .msg .tag { font-size: 12px; color: var(--muted); margin-top: 5px; line-height: 1.5; }
+  .msg.from-ai .tag { text-align: right; color: var(--muted); }
   .demo-card .status {
     margin-top: 16px; padding: 12px 14px; background: #eef7ee; border-radius: 10px;
     font-size: 13.5px; color: #2c7a3a;
@@ -190,19 +192,29 @@
 
   /* Pricing */
   .pricing { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  /* three cards cannot fit between 861-1040px; they overflowed the viewport
+     (pre-existing on the live site: 94-133px of horizontal scroll) */
+  @media (max-width: 1040px) { .pricing { grid-template-columns: 1fr; } }
   .plan { border: 1px solid var(--line); border-radius: var(--radius); padding: 30px 26px; background: #fff; position: relative; }
   .plan.featured { border: 2px solid var(--brand); box-shadow: 0 12px 34px rgba(47,107,255,0.15); }
   .plan .ribbon {
     position: absolute; top: -12px; left: 26px; background: var(--brand); color: #fff;
     font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px;
   }
-  .plan h4 { font-size: 14px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
-  .plan .price { font-size: 40px; font-weight: 900; margin: 10px 0 6px; }
+  .plan h3 { font-size: 14px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  /* 40px overflowed the card and wrapped " / 月" onto a second line */
+  .plan .price { font-size: 34px; font-weight: 900; margin: 10px 0 6px; white-space: nowrap; }
   .plan .price small { font-size: 16px; font-weight: 600; color: var(--muted); }
   .plan ul { list-style: none; margin: 20px 0 26px; }
   .plan ul li { padding: 8px 0 8px 26px; position: relative; font-size: 15px; color: var(--ink); }
   .plan ul li::before { content: "✓"; position: absolute; left: 0; color: var(--brand); font-weight: 800; }
   .plan .btn { width: 100%; text-align: center; }
+  /* very narrow phones: shrink so the nowrap price stays inside the card */
+  @media (max-width: 360px) {
+    .plan { padding: 24px 18px; }
+    .plan .price { font-size: 28px; }
+    .plan .price small { font-size: 14px; }
+  }
 
   /* Process */
   .steps { counter-reset: step; display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; }
@@ -214,7 +226,7 @@
     border-radius: 50%; display: flex; align-items: center; justify-content: center;
     font-weight: 800; font-size: 14px;
   }
-  .step h4 { font-size: 15px; font-weight: 800; margin-bottom: 6px; }
+  .step h3 { font-size: 15px; font-weight: 800; margin-bottom: 6px; }
   .step p { font-size: 13.5px; color: var(--muted); }
 
   /* CTA */
@@ -223,7 +235,7 @@
     border-radius: 20px; color: #fff; text-align: center; padding: 60px 40px;
   }
   .cta h2 { font-size: 32px; font-weight: 900; margin-bottom: 14px; }
-  .cta p { opacity: 0.9; font-size: 17px; margin-bottom: 28px; max-width: 560px; margin-left: auto; margin-right: auto; }
+  .cta p { font-size: 17px; margin-bottom: 28px; max-width: 560px; margin-left: auto; margin-right: auto; }
   .cta .btn { background: #fff; color: var(--brand-dark); }
   .cta .btn:hover { background: var(--soft); }
 
@@ -239,7 +251,11 @@
     .hero { padding: 54px 0 44px; }
     .hero-grid, .case { grid-template-columns: 1fr; gap: 34px; }
     .hero h1 { font-size: 32px; }
-    .nav-links { display: none; }
+    /* keep the CTA visible on mobile — hiding the whole nav removed the only
+       header conversion path on an 82px sticky bar */
+    .nav-links { display: flex; gap: 0; }
+    .nav-links a:not(.btn) { display: none; }
+    .nav-links a.btn { padding: 9px 15px; font-size: 13.5px; }
     .grid-3, .pricing { grid-template-columns: 1fr; }
     .steps { grid-template-columns: 1fr 1fr; }
     .stat-row { grid-template-columns: 1fr 1fr 1fr; }
@@ -252,6 +268,9 @@
     .hero h1 { font-size: 28px; }
     .cta { padding: 40px 24px; }
   }
+  /* word-break:keep-all makes the headline unbreakable; at 28px the longest line
+     needed 303px and overflowed a 320px viewport */
+  @media (max-width: 360px) { .hero h1 { font-size: 26px; } }
 </style>
 </head>
 <body>
@@ -344,7 +363,7 @@
       <div class="pb-icon">🔒</div>
       <div>
         <h3>病患、學生資料會不會外流？</h3>
-        <p><strong>主機在台灣、由我們自己管理，對話資料不外傳、不販售。</strong>常見問題在本機回覆、完全不離開主機；非預設問題才會使用 AI 模型，且可依需求<strong>完全關閉</strong>。對話預設保留 90 天後自動刪除。我們自己的補習班用的就是同一套系統。</p>
+        <p><strong>每位客戶獨立主機、由我們自己管理，對話資料不外傳、不販售。</strong>常見問題在本機回覆、完全不離開主機；非預設問題才會使用 AI 模型，且可依需求<strong>完全關閉</strong>。對話預設保留 90 天後自動刪除。我們自己的補習班用的就是同一套系統。</p>
         <a href="/privacy.html" class="btn ghost small">看完整資料處理說明 →</a>
       </div>
     </div>
@@ -421,7 +440,7 @@
 
     <div class="pricing">
       <div class="plan">
-        <h4>入門方案</h4>
+        <h3>入門方案</h3>
         <div class="price">NT$15,000<small> / 月</small></div>
         <p class="plan-note">一天 NT$500，比一個兼職的白天班還便宜</p>
         <ul>
@@ -434,7 +453,7 @@
       </div>
       <div class="plan featured">
         <span class="ribbon">最受歡迎</span>
-        <h4>標準方案</h4>
+        <h3>標準方案</h3>
         <div class="price">NT$25,000<small> / 月</small></div>
         <p class="plan-note">約等於一位全職工讀生的成本，但不會離職</p>
         <ul>
@@ -447,7 +466,7 @@
         <a href="#contact" class="btn">免費評估需求</a>
       </div>
       <div class="plan">
-        <h4>進階方案</h4>
+        <h3>進階方案</h3>
         <div class="price">NT$40,000+<small> / 月</small></div>
         <p class="plan-note">整合既有系統、多流程自動化</p>
         <ul>
@@ -475,11 +494,11 @@
       <p>從評估到上線，我們盡可能讓過程簡單、快速。</p>
     </div>
     <div class="steps">
-      <div class="step"><h4>需求訪談</h4><p>聊聊你最花時間的工作，找到 1-2 件最值得自動化。</p></div>
-      <div class="step"><h4>急送原型</h4><p>24 小時內建出能用的 AI 助手給你看。</p></div>
-      <div class="step"><h4>一週上線</h4><p>7 天內完成第一個完整自動化流程。</p></div>
-      <div class="step"><h4>成效檢討</h4><p>每月看數據，證明省下多少時間與成本。</p></div>
-      <div class="step"><h4>持續擴充</h4><p>用出成效後，再逐步加入更多功能。</p></div>
+      <div class="step"><h3>需求訪談</h3><p>聊聊你最花時間的工作，找到 1-2 件最值得自動化。</p></div>
+      <div class="step"><h3>急送原型</h3><p>24 小時內建出能用的 AI 助手給你看。</p></div>
+      <div class="step"><h3>一週上線</h3><p>7 天內完成第一個完整自動化流程。</p></div>
+      <div class="step"><h3>成效檢討</h3><p>每月看數據，證明省下多少時間與成本。</p></div>
+      <div class="step"><h3>持續擴充</h3><p>用出成效後，再逐步加入更多功能。</p></div>
     </div>
   </div>
 </section>
@@ -490,7 +509,7 @@
     <h2>讓我幫你算這筆帳</h2>
     <p>20 分鐘免費諮詢，我們不講功能，直接用你現在的櫃檯人事成本，算出導入 AI 後一個月省多少、幾個月回本。帶著數字離開，你再決定要不要做。</p>
     <a href="https://line.me/R/ti/p/@127bwuyu" class="btn">透過 Line 預約試算</a>
-    <p style="margin-top: 16px; font-size: 14px; opacity: 0.85;">📍 新北市林口區　·　📞 0911-128-881</p>
+    <p style="margin-top: 16px; font-size: 14px;">📍 新北市林口區　·　📞 0911-128-881</p>
   </div>
 </section>
 

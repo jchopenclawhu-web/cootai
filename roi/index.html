@@ -13,12 +13,19 @@
 <meta property="og:url" content="https://cootai.tw/roi/">
 <meta property="og:image" content="https://cootai.tw/brand/og_card.png">
 <meta property="og:locale" content="zh_TW">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="補習班 AI 營運試算 — CooTai 酷台">
+<meta name="twitter:description" content="輸入學生數與老師數，即時算出每月可回收的時間與人力成本。">
+<meta name="twitter:image" content="https://cootai.tw/brand/og_card.png">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <title>CooTai 酷台 — 補習班營運系統｜投資試算</title>
 <style>
   :root{
-    --navy:#12263f; --navy2:#2f6bff; --ink:#1a2332; --muted:#5b6b7c;
+    --navy:#12263f; --navy2:#2b63eb; --ink:#1a2332; --muted:#5b6b7c;
     --line:#e2e8ef; --bg:#f6f8fb; --card:#ffffff;
-    --gold:#b8860b; --good:#0f7a4d; --warn:#a15c00; --accent:#ffbb3d;
+    --gold:#b8860b; --good:#0f7a4d; --warn:#a15c00; --accent:#ffdb8f;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);
@@ -28,11 +35,14 @@
 
   header{background:linear-gradient(160deg,var(--navy),#1e4fd6);color:#fff;padding:44px 0 38px;margin-bottom:28px}
   header .wrap{padding-bottom:0}
-  .logo{font-size:13px;letter-spacing:.22em;opacity:.75;margin-bottom:12px}
+  .back{display:inline-block;font-size:13px;color:#fff;opacity:.85;text-decoration:none;
+    margin-bottom:14px;padding:5px 11px;border:1px solid rgba(255,255,255,.4);border-radius:20px}
+  .back:hover{opacity:1;background:rgba(255,255,255,.12)}
+  .logo{font-size:13px;letter-spacing:.22em;opacity:.88;margin-bottom:12px}
   h1{font-size:27px;line-height:1.45;margin:0 0 14px;font-weight:700}
   .sub{font-size:15.5px;opacity:.92;margin:0;max-width:62ch}
-  .tagline{margin-top:18px;font-size:16px;font-weight:700;color:var(--accent,#ffbb3d);
-    border-left:3px solid #ffbb3d;padding-left:12px}
+  .tagline{margin-top:18px;font-size:16px;font-weight:700;color:var(--accent,#ffdb8f);
+    border-left:3px solid #ffdb8f;padding-left:12px}
 
   h2{font-size:20px;margin:40px 0 6px;color:var(--navy);font-weight:700}
   h2 .n{display:inline-block;width:26px;height:26px;line-height:26px;text-align:center;
@@ -50,21 +60,21 @@
   .f input{width:100%;padding:9px 11px;border:1px solid #cfd8e3;border-radius:7px;font-size:15.5px;
     font-family:inherit;color:var(--ink);background:#fff}
   .f input:focus{outline:2px solid var(--navy2);outline-offset:1px;border-color:var(--navy2)}
-  .f .hint{font-size:11.5px;color:#8496a8;margin-top:4px;display:block}
+  .f .hint{font-size:12px;color:#667381;margin-top:4px;display:block}
 
   .rows{padding:6px 22px 4px}
   .row{display:flex;justify-content:space-between;align-items:baseline;gap:14px;
     padding:11px 0;border-bottom:1px dashed var(--line)}
   .row:last-child{border-bottom:none}
   .row .k{font-size:14.5px}
-  .row .k em{font-style:normal;display:block;font-size:11.5px;color:#8496a8;margin-top:2px}
+  .row .k em{font-style:normal;display:block;font-size:12px;color:#667381;margin-top:2px}
   .row .v{font-size:16px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
   .v.muted{color:var(--muted);font-weight:500;font-size:14px}
 
   .total{background:#f0f5fa;border-top:2px solid var(--navy);padding:18px 22px;display:flex;
     justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
   .total .lbl{font-size:14px;font-weight:700;color:var(--navy)}
-  .total .lbl small{display:block;font-weight:400;color:var(--muted);font-size:11.5px;margin-top:2px}
+  .total .lbl small{display:block;font-weight:400;color:var(--muted);font-size:12px;margin-top:2px}
   .total .num{font-size:30px;font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;line-height:1.15}
   .total .num small{font-size:14px;font-weight:600;color:var(--muted);display:block;text-align:right;margin-top:2px}
 
@@ -94,7 +104,7 @@
   .ph h5{margin:0 0 8px;font-size:14.5px;color:var(--navy)}
   .ph ul{margin:0;padding-left:16px;font-size:12.5px;color:var(--muted);line-height:1.7}
   .ph li{margin-bottom:3px}
-  .ph .when{font-size:11.5px;color:#8496a8;margin-top:9px;padding-top:9px;border-top:1px dashed var(--line)}
+  .ph .when{font-size:12px;color:#667381;margin-top:9px;padding-top:9px;border-top:1px dashed var(--line)}
 
   table{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--card)}
   th,td{padding:11px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
@@ -111,10 +121,17 @@
 
   .note{background:#fff8e6;border-left:4px solid var(--gold);padding:14px 16px;border-radius:8px;
     font-size:13.5px;color:#6b4d06;line-height:1.75;margin:16px 0}
-  footer{text-align:center;color:#8496a8;font-size:12px;margin-top:44px;line-height:1.9}
+  footer{text-align:center;color:#667381;font-size:12px;margin-top:44px;line-height:1.9}
+  .src .s h3{font-size:15.5px;font-weight:700;margin:0 0 8px}
+  .ph h3{font-size:14.5px;font-weight:700;margin:0 0 8px}
   .cta{background:var(--navy);color:#fff;border-radius:11px;padding:22px;text-align:center;margin-top:22px}
-  .cta h4{margin:0 0 7px;font-size:18px;color:#fff}
+  .cta h3{margin:0 0 7px;font-size:18px;color:#fff}
   .cta p{margin:0;font-size:14px;opacity:.9}
+  .cta a.cta-btn{display:inline-block;margin-top:16px;background:#fff;color:var(--navy);
+    text-decoration:none;font-weight:700;font-size:15px;padding:12px 26px;border-radius:9px}
+  .cta a.cta-btn:hover{background:#ffdb8f}
+  .cta .cta-alt{margin-top:12px;font-size:13px;opacity:.85}
+  .cta .cta-alt a{color:#8fb0ff}
   @media(max-width:640px){
     h1{font-size:22px} .total .num{font-size:25px}
     .ph{flex-direction:column} .ph > div{border-right:none;border-bottom:1px solid var(--line)}
@@ -127,6 +144,7 @@
 
 <header>
   <div class="wrap">
+    <a class="back" href="https://cootai.tw/">← 回首頁 cootai.tw</a>
     <div class="logo">COO + AI &nbsp;·&nbsp; 酷台</div>
     <h1>把重複的日常交給 AI，<br>把時間還給老師</h1>
     <p class="sub">專為補習班設計的營運系統。先把基礎建設架好，再依你的需求，一個功能一個功能長出來。</p>
@@ -142,19 +160,19 @@
   <div class="src">
     <div class="s">
       <span class="badge b-hard">硬成本 · 最關鍵</span>
-      <h4>人力替代</h4>
+      <h3>人力替代</h3>
       <p>家長問題有 6–7 成是重複的（請假、時間、費用、地址）。這些問題自動處理後，櫃檯可以從兩個人減到一個兼職。</p>
       <div class="amt h" id="hardAmt">—</div>
     </div>
     <div class="s">
       <span class="badge b-soft">軟成本 · 時間回收</span>
-      <h4>老師與行政的時間</h4>
+      <h3>老師與行政的時間</h3>
       <p>帳務、備課、課後紀錄、家長回覆。每一項都是每個月重複發生、而且永遠擠在月底那三天的事。</p>
       <div class="amt s" id="softAmt">—</div>
     </div>
     <div class="s">
       <span class="badge b-strat">營收面</span>
-      <h4>招生季的承接能力</h4>
+      <h3>招生季的承接能力</h3>
       <p>招生季家長詢問量是平常的 3 倍，回覆慢就流失。你的容量以前受限于一個櫃檯，現在不會。</p>
       <div class="amt" style="color:var(--warn)">看得到、量不到</div>
     </div>
@@ -258,7 +276,7 @@
   <div class="ph">
     <div>
       <div class="pn">PHASE 0</div>
-      <h5>基礎建設</h5>
+      <h3>基礎建設</h3>
       <ul>
         <li>雲端主機與環境</li>
         <li>Google Workspace（試算表、文件、雲端硬碟）</li>
@@ -270,7 +288,7 @@
     </div>
     <div>
       <div class="pn">PHASE 1</div>
-      <h5>對外窗口</h5>
+      <h3>對外窗口</h3>
       <ul>
         <li>官方網站（含招生頁）</li>
         <li>LINE 官方帳號串接</li>
@@ -281,7 +299,7 @@
     </div>
     <div>
       <div class="pn">PHASE 2</div>
-      <h5>內部營運</h5>
+      <h3>內部營運</h3>
       <ul>
         <li>帳務對帳與收據</li>
         <li>老師備課表單</li>
@@ -292,7 +310,7 @@
     </div>
     <div>
       <div class="pn">PHASE 3+</div>
-      <h5>依你的需求長</h5>
+      <h3>依你的需求長</h3>
       <ul>
         <li>用你們教材訓練的客服</li>
         <li>單字音檔 / 影片內容</li>
@@ -349,8 +367,10 @@
   </div>
 
   <div class="cta">
-    <h4>先聊 20 分鐘，我們幫你找出最值得自動化的地方</h4>
+    <h3>先聊 20 分鐘，我們幫你找出最值得自動化的地方</h3>
     <p>不加任何壓力。聊完你會拿到一份屬於你們的試算表，不是通用簡報。</p>
+    <a class="cta-btn" href="https://line.me/R/ti/p/@127bwuyu">透過 Line 預約 20 分鐘試算</a>
+    <p class="cta-alt">或直接來電 <a href="tel:+886911128881">0911-128-881</a></p>
   </div>
 
   <details>
