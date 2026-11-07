@@ -294,6 +294,67 @@ def send_reply(reply_token, text):
         return resp.status
 
 
+# --- Hermes agent bridge -------------------------------------------------
+# Users in this allowlist get the real agent (tools, web, research), not the
+# scripted FAQ. Everyone else stays on the rule engine. This is the security
+# boundary: an unlisted LINE user can never reach a tool.
+OWNER_IDS = {
+    u.strip() for u in os.environ.get(
+        "OWNER_IDS",
+        "U7b2a333bd2eaa58b8c751c65b96d7259",   # Chun
+    ).split(",") if u.strip()
+}
+
+HERMES_BIN = os.environ.get("HERMES_BIN",
+                            os.path.expanduser("~/.local/bin/hermes"))
+AGENT_TIMEOUT = int(os.environ.get("AGENT_TIMEOUT", "45"))
+
+AGENT_BUSY = (
+    "這個問題需要查一下資料，比平常久一點。\n"
+    "請稍等 30 秒再問我一次，或直接把問題說得更具體一點。"
+)
+
+
+def agent_reply(text, user_id):
+    """Run the full Hermes agent for one turn. None means it didn't finish."""
+    if not os.path.exists(HERMES_BIN):
+        log(f"AGENT missing binary {HERMES_BIN}")
+        return None
+
+    session = "line-" + user_id[-12:]
+    cmd = [HERMES_BIN, "chat", "-Q", "--oneshot",
+           "--continue", session, "--create-if-missing",
+           "-q", text]
+
+    env = dict(os.environ)
+    env["PATH"] = os.path.dirname(HERMES_BIN) + ":" + env.get("PATH", "")
+    env.setdefault("HOME", os.path.expanduser("~"))
+
+    started = time.time()
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True,
+                           timeout=AGENT_TIMEOUT, env=env)
+    except subprocess.TimeoutExpired:
+        log(f"AGENT timeout after {AGENT_TIMEOUT}s")
+        return None
+    except Exception as e:                      # noqa: BLE001
+        log(f"AGENT spawn failed: {e}")
+        return None
+
+    elapsed = time.time() - started
+    if p.returncode != 0:
+        log(f"AGENT rc={p.returncode} in {elapsed:.1f}s "
+            f"err={(p.stderr or '')[:200].strip()}")
+
+    out = "\n".join(
+        line for line in (p.stdout or "").splitlines()
+        if not line.startswith("session_id:")
+    ).strip()
+
+    log(f"AGENT reply in {elapsed:.1f}s len={len(out)}")
+    return out or None
+
+
 # Physical location used by the "location" / "map" intents. Swap this per client.
 # Resolved by Google at tap time, so no coordinates are stored (and none can be wrong).
 MAP_QUERY = os.environ.get("MAP_QUERY", "新北市林口區仁愛路二段630號")
@@ -431,7 +492,15 @@ RATE_LIMITED = (
 
 
 def compose_reply(text, user_id=None):
-    """Rule engine first (fast, free, exact); LLM fallback for anything else."""
+    """Owner -> full agent. Everyone else -> rules, then grounded LLM."""
+    if user_id and user_id in OWNER_IDS:
+        _remember(user_id, "user", text)
+        out = agent_reply(text, user_id)
+        if out:
+            _remember(user_id, "assistant", out)
+            return out, "agent"
+        return AGENT_BUSY, "agent_busy"
+
     intent = match_intent(text)
     if intent:
         _remember(user_id, "user", text)
