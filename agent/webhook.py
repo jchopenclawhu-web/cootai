@@ -12,6 +12,7 @@ import tempfile
 import time
 import urllib.request
 import urllib.parse
+import urllib.error
 import wave
 from collections import OrderedDict
 from urllib.parse import parse_qs
@@ -276,7 +277,27 @@ def verify_signature(channel_secret, body, signature):
     return hmac.compare_digest(computed, signature)
 
 
-def send_reply(reply_token, text):
+PUSH_API = "https://api.line.me/v2/bot/message/push"
+
+
+def send_push(user_id, text):
+    """Push costs monthly quota; only used when the reply token has expired."""
+    payload = {"to": user_id, "messages": [{"type": "text", "text": text}]}
+    req = urllib.request.Request(
+        PUSH_API,
+        data=json.dumps(payload).encode(),
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + ACCESS_TOKEN,
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return resp.status
+
+
+def send_reply(reply_token, text, user_id=None):
+    """Reply tokens are free but expire; fall back to a push when they do."""
     payload = {
         "replyToken": reply_token,
         "messages": [{"type": "text", "text": text}],
@@ -290,8 +311,14 @@ def send_reply(reply_token, text):
         },
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        return resp.status
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return resp.status
+    except urllib.error.HTTPError as e:
+        if e.code == 400 and user_id:
+            log("reply token rejected -> push fallback")
+            return send_push(user_id, text)
+        raise
 
 
 # --- Hermes agent bridge -------------------------------------------------
@@ -307,11 +334,14 @@ OWNER_IDS = {
 
 HERMES_BIN = os.environ.get("HERMES_BIN",
                             os.path.expanduser("~/.local/bin/hermes"))
-AGENT_TIMEOUT = int(os.environ.get("AGENT_TIMEOUT", "45"))
+# Research queries (search + extract + synthesise) routinely need 60-90s on
+# 2 vCPU. The reply token expires before that, so send_reply falls back to a
+# push; this budget is what actually bounds the turn.
+AGENT_TIMEOUT = int(os.environ.get("AGENT_TIMEOUT", "110"))
 
 AGENT_BUSY = (
-    "這個問題需要查一下資料，比平常久一點。\n"
-    "請稍等 30 秒再問我一次，或直接把問題說得更具體一點。"
+    "這題要查的資料比較多，處理超過兩分鐘了。\n"
+    "可以先把範圍縮小一點，例如指定一家、或指定要看的項目，我再幫您查。"
 )
 
 
@@ -548,7 +578,7 @@ def handle(event):
             if _allowed("notify", user_id):
                 notify_owner(text, user_id, "booking")
         if token:
-            send_reply(token, reply[:MAX_REPLY])
+            send_reply(token, reply[:MAX_REPLY], user_id)
         return
 
     if mtype == "audio":
@@ -581,12 +611,13 @@ def handle(event):
         # Echo the transcript so the user knows we heard them correctly
         reply = f"（我聽到的是：「{text}」）\n\n" + reply
         if token:
-            send_reply(token, reply[:MAX_REPLY])
+            send_reply(token, reply[:MAX_REPLY], user_id)
         return
 
     log(f"OTHER <- unsupported message type={mtype!r}")
     if token:
-        send_reply(token, "目前我可以處理文字與語音訊息，請用文字或語音輸入，謝謝！")
+        send_reply(token, "目前我可以處理文字與語音訊息，請用文字或語音輸入，謝謝！",
+                   user_id)
 
 
 def _export_csv():
