@@ -11,6 +11,7 @@ import subprocess
 import tempfile
 import time
 import urllib.request
+import urllib.parse
 import wave
 from collections import OrderedDict
 from urllib.parse import parse_qs
@@ -295,6 +296,12 @@ def send_reply(reply_token, text):
         return resp.status
 
 
+# Physical location used by the "location" / "map" intents. Swap this per client.
+# Resolved by Google at tap time, so no coordinates are stored (and none can be wrong).
+MAP_QUERY = os.environ.get("MAP_QUERY", "新北市林口區")
+MAP_URL = "https://www.google.com/maps/search/?api=1&query=" + \
+          urllib.parse.quote(MAP_QUERY)
+
 CATCH_ALL = (
     "您好！感謝您聯繫我們 😊\n"
     "我們會在營業時間內儘快回覆您。\n"
@@ -313,6 +320,7 @@ INTENTS = {
     ),
     "location": (
         "我們在新北市林口區，電話 0911-128-881。\n"
+        "地圖在這裡 👉 " + MAP_URL + "\n"
         "方便的話，我可以請專人跟您約時間，直接到您店裡聊 20 分鐘。"
     ),
     "hours": (
@@ -349,7 +357,8 @@ INTENTS = {
 KW = {
     "greet": ["你好", "您好", "hello", "hi", "嗨", "哈囉"],
     "price": ["多少", "價格", "費用", "多少錢", "價錢", "收費", "月費", "方案", "怎麼算", "price", "cost"],
-    "location": ["地址", "哪裡", "位置", "在哪", "地圖", "location", "address", "where"],
+    "location": ["地址", "哪裡", "位置", "在哪", "地圖", "地圖連結", "怎麼去",
+                 "怎麼走", "google map", "maps", "map", "location", "address", "where"],
     "hours": ["時間", "營業", "幾點", "幾號", "hours", "open", "時間表"],
     "booking": ["預約", "掛號", "報名", "預定", "booking", "book", "登記", "排"],
     "emotion": ["很糟", "糟", "很差", "差勁", "不好", "不滿", "投訴", "客訴",
