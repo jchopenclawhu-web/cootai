@@ -7,6 +7,7 @@ import hmac
 import io
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 import time
@@ -277,12 +278,126 @@ def verify_signature(channel_secret, body, signature):
     return hmac.compare_digest(computed, signature)
 
 
+# --- Outbound files ------------------------------------------------------
+# The agent drops files here; we serve them over the existing tunnel hostname
+# and hand LINE a signed, expiring URL. No new DNS, no new tunnel route.
+OUT_DIR = os.environ.get("OUT_DIR", "/srv/cootai/renai/outbound")
+PUBLIC_BASE = os.environ.get("PUBLIC_BASE", "https://renai.cootai.tw").rstrip("/")
+FILE_TTL = int(os.environ.get("FILE_TTL", "86400"))     # 24h
+MAX_FILE_BYTES = 20 * 1024 * 1024
+
+MIME = {
+    ".pdf": "application/pdf",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ".csv": "text/csv; charset=utf-8",
+    ".txt": "text/plain; charset=utf-8",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+}
+
+
+def _file_token(name, exp):
+    msg = f"{name}:{exp}".encode()
+    return hmac.new(CHANNEL_SECRET.encode(), msg, hashlib.sha256).hexdigest()[:32]
+
+
+def file_url(name, exp=None):
+    exp = exp or int(time.time()) + FILE_TTL
+    return f"{PUBLIC_BASE}/f/{exp}-{_file_token(name, exp)}/{urllib.parse.quote(name)}"
+
+
+def _new_outbound(since):
+    """Files the agent produced during this turn, newest last."""
+    try:
+        names = os.listdir(OUT_DIR)
+    except FileNotFoundError:
+        return []
+    out = []
+    for n in names:
+        p = os.path.join(OUT_DIR, n)
+        try:
+            st = os.stat(p)
+        except OSError:
+            continue
+        if not os.path.isfile(p) or st.st_mtime < since:
+            continue
+        if st.st_size == 0 or st.st_size > MAX_FILE_BYTES:
+            log(f"OUTBOUND skip {n} size={st.st_size}")
+            continue
+        out.append((n, st.st_size))
+    return sorted(out, key=lambda x: x[0])
+
+
+SWEEP_DIRS = ["/srv/cootai", "/srv/cootai/renai"]
+SWEEP_SKIP = {"outbound", "venv", "hf", "agent", "node_modules", "installs",
+              "backups", "sessions", "logs", "audio_cache", "image_cache"}
+DELIVER_EXT = {".pdf", ".docx", ".xlsx", ".pptx", ".csv", ".png", ".jpg", ".jpeg"}
+
+
+def _sweep_outbound(since):
+    """Safety net: the agent does not always honour the outbound instruction.
+
+    Anything deliverable it wrote during this turn is moved into OUT_DIR, so a
+    document that lands in the home directory still reaches the user instead of
+    being silently stranded on the VPS.
+    """
+    found = []
+    for root in SWEEP_DIRS:
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames
+                           if d not in SWEEP_SKIP and not d.startswith(".")]
+            if os.path.abspath(dirpath) == os.path.abspath(OUT_DIR):
+                continue
+            for fn in filenames:
+                if os.path.splitext(fn)[1].lower() not in DELIVER_EXT:
+                    continue
+                p = os.path.join(dirpath, fn)
+                try:
+                    st = os.stat(p)
+                except OSError:
+                    continue
+                if st.st_mtime < since or st.st_size == 0 \
+                        or st.st_size > MAX_FILE_BYTES:
+                    continue
+                found.append(p)
+
+    moved = []
+    for p in found:
+        name = os.path.basename(p)
+        dest = os.path.join(OUT_DIR, name)
+        try:
+            shutil.move(p, dest)
+            moved.append((name, os.path.getsize(dest)))
+            log(f"OUTBOUND swept {p} -> {dest}")
+        except OSError as e:                       # noqa: BLE001
+            log(f"OUTBOUND move failed {p}: {e}")
+    return sorted(moved, key=lambda x: x[0])
+
+
+def _file_message(name, size):
+    url = file_url(name)
+    ext = os.path.splitext(name)[1].lower()
+    if ext in (".png", ".jpg", ".jpeg"):
+        return {"type": "image", "originalContentUrl": url,
+                "previewImageUrl": url}
+    return {"type": "file", "fileName": name, "fileSize": size, "fileUrl": url}
+
+
 PUSH_API = "https://api.line.me/v2/bot/message/push"
 
 
-def send_push(user_id, text):
+def send_push(user_id, text, files=None):
     """Push costs monthly quota; only used when the reply token has expired."""
-    payload = {"to": user_id, "messages": [{"type": "text", "text": text}]}
+    msgs = [{"type": "text", "text": text}]
+    for name, size in (files or [])[:4]:
+        try:
+            msgs.append(_file_message(name, size))
+        except Exception as e:                  # noqa: BLE001
+            log(f"OUTBOUND build failed for {name}: {e}")
+    payload = {"to": user_id, "messages": msgs}
     req = urllib.request.Request(
         PUSH_API,
         data=json.dumps(payload).encode(),
@@ -296,11 +411,17 @@ def send_push(user_id, text):
         return resp.status
 
 
-def send_reply(reply_token, text, user_id=None):
+def send_reply(reply_token, text, user_id=None, files=None):
     """Reply tokens are free but expire; fall back to a push when they do."""
+    msgs = [{"type": "text", "text": text}]
+    for name, size in (files or [])[:4]:        # LINE caps a reply at 5
+        try:
+            msgs.append(_file_message(name, size))
+        except Exception as e:                  # noqa: BLE001
+            log(f"OUTBOUND build failed for {name}: {e}")
     payload = {
         "replyToken": reply_token,
-        "messages": [{"type": "text", "text": text}],
+        "messages": msgs,
     }
     req = urllib.request.Request(
         API,
@@ -317,7 +438,7 @@ def send_reply(reply_token, text, user_id=None):
     except urllib.error.HTTPError as e:
         if e.code == 400 and user_id:
             log("reply token rejected -> push fallback")
-            return send_push(user_id, text)
+            return send_push(user_id, text, files)
         raise
 
 
@@ -337,7 +458,7 @@ HERMES_BIN = os.environ.get("HERMES_BIN",
 # Research queries (search + extract + synthesise) routinely need 60-90s on
 # 2 vCPU. The reply token expires before that, so send_reply falls back to a
 # push; this budget is what actually bounds the turn.
-AGENT_TIMEOUT = int(os.environ.get("AGENT_TIMEOUT", "110"))
+AGENT_TIMEOUT = int(os.environ.get("AGENT_TIMEOUT", "150"))
 
 AGENT_BUSY = (
     "這題要查的資料比較多，處理超過兩分鐘了。\n"
@@ -567,8 +688,15 @@ def handle(event):
         # retention routine prunes. Writing it to the journal too created a
         # second copy that outlived the stated 90-day retention.
         log(f"TEXT  <- len={len(text)}")
+        turn_start = time.time()
         reply, src = compose_reply(text, user_id)
         log(f"TEXT  -> {src}")
+        outbound = []
+        if src == "agent":
+            outbound = _new_outbound(turn_start) or _sweep_outbound(turn_start)
+        if outbound:
+            log(f"OUTBOUND {len(outbound)} file(s): "
+                + ", ".join(n for n, _ in outbound))
         log_inquiry(user_id, text, src, reply)
         if src == "llm":
             # Unscripted question = genuine inquiry -> alert the owner
@@ -578,7 +706,7 @@ def handle(event):
             if _allowed("notify", user_id):
                 notify_owner(text, user_id, "booking")
         if token:
-            send_reply(token, reply[:MAX_REPLY], user_id)
+            send_reply(token, reply[:MAX_REPLY], user_id, outbound)
         return
 
     if mtype == "audio":
@@ -652,6 +780,12 @@ def _export_csv():
 
 def app(environ, start_response):
     path = environ.get("PATH_INFO", "/")
+    # PEP 3333 hands PATH_INFO over as latin-1-decoded bytes, so a UTF-8
+    # filename arrives as mojibake and the HMAC never matches. Re-decode.
+    try:
+        path = path.encode("latin-1").decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        pass
 
     # Data portability endpoint (GET /export?token=...). Disabled unless a token
     # is configured, so an unconfigured deployment cannot leak conversations.
@@ -677,6 +811,47 @@ def app(environ, start_response):
             ("Cache-Control", "no-store"),
         ])
         return [payload]
+
+    # Outbound file delivery (GET /f/<exp>-<token>/<name>). LINE's servers
+    # fetch this URL to attach the file to the chat, so it must be public.
+    # The HMAC binds name+expiry, so URLs cannot be enumerated or edited.
+    if path.startswith("/f/"):
+        if environ["REQUEST_METHOD"] != "GET":
+            start_response("405 Method Not Allowed", [("Content-Type", "text/plain")])
+            return [b"GET only"]
+        parts = path.split("/", 3)          # ['', 'f', '<exp>-<tok>', '<name>']
+        if len(parts) != 4:
+            start_response("404 Not Found", [("Content-Type", "text/plain")])
+            return [b"not found"]
+        stamp, _, token = parts[2].partition("-")
+        name = urllib.parse.unquote(parts[3])
+        if ".." in name or "/" in name or not name:
+            start_response("400 Bad Request", [("Content-Type", "text/plain")])
+            return [b"bad name"]
+        if not stamp.isdigit() or int(stamp) < time.time():
+            log(f"FILE: expired {name}")
+            start_response("410 Gone", [("Content-Type", "text/plain")])
+            return [b"link expired"]
+        if not hmac.compare_digest(token, _file_token(name, stamp)):
+            log(f"FILE: bad token for {name}")
+            start_response("403 Forbidden", [("Content-Type", "text/plain")])
+            return [b"forbidden"]
+        fp = os.path.join(OUT_DIR, name)
+        try:
+            with open(fp, "rb") as fh:
+                data = fh.read()
+        except OSError:
+            start_response("404 Not Found", [("Content-Type", "text/plain")])
+            return [b"not found"]
+        log(f"FILE: served {name} {len(data)}b")
+        ctype = MIME.get(os.path.splitext(name)[1].lower(),
+                         "application/octet-stream")
+        start_response("200 OK", [
+            ("Content-Type", ctype),
+            ("Content-Length", str(len(data))),
+            ("Cache-Control", "private, max-age=3600"),
+        ])
+        return [data]
 
     if environ["REQUEST_METHOD"] != "POST":
         start_response("405 Method Not Allowed", [("Content-Type", "text/plain")])
